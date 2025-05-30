@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   serverExternalPackages: ['leaflet'],
   webpack: (config) => {
     config.resolve.alias = {

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 # Clarifai configuration
 CLARIFAI_PAT = os.getenv("CLARIFAI_PAT")
-CLARIFAI_APP_ID = os.getenv("CLARIFAI_APP_ID", "wildfire-analysis")
+CLARIFAI_APP_ID = os.getenv("CLARIFAI_APP_ID", "pyroguard-app")
 CLARIFAI_USER_ID = os.getenv("CLARIFAI_USER_ID", "clarifai")
 
 # Clarifai model IDs for satellite analysis

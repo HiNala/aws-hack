@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { MapPin, Activity, AlertTriangle, TrendingUp } from 'lucide-react'
 
@@ -82,6 +82,19 @@ function MapEventHandler({ onLocationClick, isAnalyzing }: { onLocationClick: (l
   return null
 }
 
+function MapTracker({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
+  const map = useMap()
+  
+  useEffect(() => {
+    mapRef.current = map
+    return () => {
+      mapRef.current = null
+    }
+  }, [map, mapRef])
+  
+  return null
+}
+
 function getRiskColor(severity: string): string {
   switch (severity) {
     case 'LOW': return '#10b981' // green-500
@@ -100,6 +113,11 @@ export default function MapComponent({
   demoLocations 
 }: MapComponentProps) {
   const [mounted, setMounted] = useState(false)
+  const [mapKey, setMapKey] = useState<string>('')
+  const [mapError, setMapError] = useState<string | null>(null)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<L.Map | null>(null)
+  const containerIdRef = useRef<string>('')
 
   // Hawaiian Islands bounds
   const hawaiiBounds: [[number, number], [number, number]] = [
@@ -107,13 +125,103 @@ export default function MapComponent({
     [22.5, -154.0]  // Northeast corner
   ]
 
-  const hawaiiCenter: [number, number] = [20.7967, -156.3319] // Maui center
+  // West Maui center (Lahaina area) - default focus area
+  const hawaiiCenter: [number, number] = [20.8783, -156.6825] // West Maui center
 
-  useEffect(() => {
-    setMounted(true)
+  // Generate a unique container ID
+  const generateContainerId = useCallback(() => {
+    return `leaflet-container-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   }, [])
 
-  if (!mounted) {
+  // Generate a stable key for the map
+  const generateMapKey = useCallback(() => {
+    return `map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  }, [])
+
+  // Comprehensive cleanup function
+  const cleanupMap = useCallback(() => {
+    try {
+      // Clean up map instance
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
+      }
+      
+      // Clean up DOM container
+      if (containerIdRef.current) {
+        const container = document.getElementById(containerIdRef.current)
+        if (container) {
+          container.innerHTML = ''
+          // Remove any Leaflet classes
+          container.className = container.className.replace(/leaflet-[^\s]*/g, '').trim()
+        }
+      }
+    } catch (error) {
+      console.warn('Error cleaning up map:', error)
+    }
+  }, [])
+
+  // Initialize map with error handling
+  const initializeMap = useCallback(() => {
+    try {
+      setMapError(null)
+      const containerId = generateContainerId()
+      const mapKey = generateMapKey()
+      
+      containerIdRef.current = containerId
+      setMapKey(mapKey)
+      
+      return true
+    } catch (error) {
+      console.error('Error initializing map:', error)
+      setMapError(error instanceof Error ? error.message : 'Map initialization failed')
+      return false
+    }
+  }, [generateContainerId, generateMapKey])
+
+  // Force remount with comprehensive cleanup
+  const remountMap = useCallback(() => {
+    cleanupMap()
+    setMounted(false)
+    setMapError(null)
+    
+    // Longer delay to ensure complete cleanup
+    setTimeout(() => {
+      if (initializeMap()) {
+        setMounted(true)
+      }
+    }, 200)
+  }, [cleanupMap, initializeMap])
+
+  // Initialize on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (initializeMap()) {
+        setMounted(true)
+      }
+    }
+
+    return () => {
+      cleanupMap()
+      setMounted(false)
+    }
+  }, [initializeMap, cleanupMap])
+
+  // Error boundary effect
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      if (event.message.includes('Map container is already initialized')) {
+        console.warn('Detected map initialization error, attempting remount...')
+        remountMap()
+      }
+    }
+
+    window.addEventListener('error', handleError)
+    return () => window.removeEventListener('error', handleError)
+  }, [remountMap])
+
+  // Loading state
+  if (!mounted || !mapKey || !containerIdRef.current) {
     return (
       <div className="w-full h-full bg-dark-900 flex items-center justify-center">
         <div className="text-center">
@@ -124,171 +232,199 @@ export default function MapComponent({
     )
   }
 
+  // Error state
+  if (mapError) {
+    return (
+      <div className="w-full h-full bg-dark-900 flex items-center justify-center">
+        <div className="text-center p-6">
+          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <p className="text-red-400 mb-4">Map Error: {mapError}</p>
+          <button 
+            onClick={remountMap}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            Retry Map
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="relative w-full h-full">
-      <MapContainer
-        center={hawaiiCenter}
-        zoom={8}
-        maxBounds={hawaiiBounds}
-        maxBoundsViscosity={1.0}
-        className="w-full h-full z-0"
-        style={{ 
-          background: '#0f172a',
-          cursor: isAnalyzing ? 'wait' : 'crosshair'
-        }}
+      <div 
+        ref={mapContainerRef} 
+        id={containerIdRef.current}
+        className="w-full h-full"
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          opacity={0.8}
-        />
-        
-        <MapEventHandler onLocationClick={onLocationClick} isAnalyzing={isAnalyzing} />
+        <MapContainer
+          key={mapKey}
+          center={hawaiiCenter}
+          zoom={8}
+          maxBounds={hawaiiBounds}
+          maxBoundsViscosity={1.0}
+          className="w-full h-full z-0"
+          style={{ 
+            background: '#0f172a',
+            cursor: isAnalyzing ? 'wait' : 'crosshair'
+          }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            opacity={0.8}
+          />
+          
+          <MapEventHandler onLocationClick={onLocationClick} isAnalyzing={isAnalyzing} />
 
-        {/* Demo Location Markers */}
-        {demoMode && demoLocations.map((location, index) => (
-          <Marker 
-            key={`demo-${index}`}
-            position={[location.latitude, location.longitude]} 
-            icon={demoIcon}
-            eventHandlers={{
-              click: () => {
-                if (!isAnalyzing) {
-                  onLocationClick(location.latitude, location.longitude)
+          <MapTracker mapRef={mapInstanceRef} />
+
+          {/* Demo Location Markers */}
+          {demoMode && demoLocations.map((location, index) => (
+            <Marker 
+              key={`demo-${index}-${mapKey}`}
+              position={[location.latitude, location.longitude]} 
+              icon={demoIcon}
+              eventHandlers={{
+                click: () => {
+                  if (!isAnalyzing) {
+                    onLocationClick(location.latitude, location.longitude)
+                  }
                 }
-              }
-            }}
-          >
-            <Popup className="demo-popup">
-              <div className="p-2 min-w-[200px]">
-                <div className="flex items-center space-x-2 mb-2">
-                  <MapPin className="w-4 h-4 text-blue-400" />
-                  <h3 className="font-semibold text-gray-800">{location.name}</h3>
+              }}
+            >
+              <Popup className="demo-popup">
+                <div className="p-2 min-w-[200px]">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <MapPin className="w-4 h-4 text-blue-400" />
+                    <h3 className="font-semibold text-gray-800">{location.name}</h3>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-3">{location.description}</p>
+                  <div className="text-xs text-gray-500 mb-3 font-mono">
+                    {location.latitude.toFixed(4)}°N, {Math.abs(location.longitude).toFixed(4)}°W
+                  </div>
+                  <button 
+                    onClick={() => onLocationClick(location.latitude, location.longitude)}
+                    disabled={isAnalyzing}
+                    className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
+                      isAnalyzing 
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                    }`}
+                  >
+                    {isAnalyzing ? 'Analysis in Progress...' : 'Analyze Location'}
+                  </button>
                 </div>
-                <p className="text-sm text-gray-600 mb-3">{location.description}</p>
-                <div className="text-xs text-gray-500 mb-3 font-mono">
-                  {location.latitude.toFixed(4)}°N, {Math.abs(location.longitude).toFixed(4)}°W
-                </div>
-                <button 
-                  onClick={() => onLocationClick(location.latitude, location.longitude)}
-                  disabled={isAnalyzing}
-                  className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
-                    isAnalyzing 
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                      : 'bg-blue-500 text-white hover:bg-blue-600'
-                  }`}
-                >
-                  {isAnalyzing ? 'Analysis in Progress...' : 'Analyze Location'}
-                </button>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          ))}
 
-        {/* Current Analysis Marker */}
-        {currentAnalysis && (
-          <Marker 
-            position={[currentAnalysis.coordinates.latitude, currentAnalysis.coordinates.longitude]} 
-            icon={analysisIcon}
-          >
-            <Popup className="analysis-popup">
-              <div className="p-3 min-w-[250px]">
-                <div className="flex items-center space-x-2 mb-3">
-                  <Activity className="w-5 h-5 text-blue-500" />
-                  <h3 className="font-semibold text-gray-800">Wildfire Risk Analysis</h3>
-                </div>
-
-                <div className="space-y-3">
-                  {/* Location */}
-                  <div className="text-sm">
-                    <div className="text-gray-600 mb-1">Location:</div>
-                    <div className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                      {currentAnalysis.coordinates.latitude.toFixed(4)}°N, {Math.abs(currentAnalysis.coordinates.longitude).toFixed(4)}°W
-                    </div>
+          {/* Current Analysis Marker */}
+          {currentAnalysis && (
+            <Marker 
+              key={`analysis-${currentAnalysis.analysis_id}-${mapKey}`}
+              position={[currentAnalysis.coordinates.latitude, currentAnalysis.coordinates.longitude]} 
+              icon={analysisIcon}
+            >
+              <Popup className="analysis-popup">
+                <div className="p-3 min-w-[250px]">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Activity className="w-5 h-5 text-blue-500" />
+                    <h3 className="font-semibold text-gray-800">Wildfire Risk Analysis</h3>
                   </div>
 
-                  {/* Analysis Status */}
-                  <div className="text-sm">
-                    <div className="text-gray-600 mb-1">Status:</div>
-                    <div className={`inline-flex items-center space-x-1 px-2 py-1 rounded text-xs font-medium ${
-                      currentAnalysis.status === 'processing' ? 'bg-blue-100 text-blue-700' :
-                      currentAnalysis.status === 'completed' ? 'bg-green-100 text-green-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {currentAnalysis.status === 'processing' && (
-                        <div className="animate-spin w-3 h-3 border border-blue-500 border-t-transparent rounded-full"></div>
-                      )}
-                      <span className="capitalize">{currentAnalysis.status}</span>
-                    </div>
-                  </div>
-
-                  {/* Processing Time */}
-                  {currentAnalysis.processing_time_seconds && (
+                  <div className="space-y-3">
+                    {/* Location */}
                     <div className="text-sm">
-                      <div className="text-gray-600 mb-1">Processing Time:</div>
-                      <div className="text-gray-800 font-mono">
-                        {currentAnalysis.processing_time_seconds.toFixed(1)}s
+                      <div className="text-gray-600 mb-1">Location:</div>
+                      <div className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                        {currentAnalysis.coordinates.latitude.toFixed(4)}°N, {Math.abs(currentAnalysis.coordinates.longitude).toFixed(4)}°W
                       </div>
                     </div>
-                  )}
 
-                  {/* Risk Assessment */}
-                  {currentAnalysis.risk_assessment && (
-                    <div className="border-t pt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-1">
-                          <AlertTriangle className="w-4 h-4 text-orange-500" />
-                          <span className="text-sm font-semibold text-gray-700">Risk Assessment</span>
-                        </div>
-                        <div 
-                          className="px-2 py-1 rounded text-xs font-bold text-white"
-                          style={{ backgroundColor: getRiskColor(currentAnalysis.risk_assessment.severity) }}
-                        >
-                          {currentAnalysis.risk_assessment.severity}
-                        </div>
-                      </div>
-                      
-                      <div className="mb-2">
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-gray-600">Risk Level:</span>
-                          <span className="font-semibold">
-                            {(currentAnalysis.risk_assessment.risk_level * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="h-2 rounded-full transition-all duration-300"
-                            style={{ 
-                              width: `${currentAnalysis.risk_assessment.risk_level * 100}%`,
-                              backgroundColor: getRiskColor(currentAnalysis.risk_assessment.severity)
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-gray-600 leading-relaxed">
-                        {currentAnalysis.risk_assessment.rationale}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Demo Mode Indicator */}
-                  {currentAnalysis.demo_mode && (
-                    <div className="border-t pt-2">
-                      <div className="bg-blue-50 border border-blue-200 rounded px-2 py-1">
-                        <div className="flex items-center space-x-1">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                          <span className="text-xs text-blue-700 font-medium">Demo Mode</span>
-                        </div>
+                    {/* Analysis Status */}
+                    <div className="text-sm">
+                      <div className="text-gray-600 mb-1">Status:</div>
+                      <div className={`inline-flex items-center space-x-1 px-2 py-1 rounded text-xs font-medium ${
+                        currentAnalysis.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                        currentAnalysis.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {currentAnalysis.status === 'processing' && (
+                          <div className="animate-spin w-3 h-3 border border-blue-500 border-t-transparent rounded-full"></div>
+                        )}
+                        <span className="capitalize">{currentAnalysis.status}</span>
                       </div>
                     </div>
-                  )}
+
+                    {/* Processing Time */}
+                    {currentAnalysis.processing_time_seconds && (
+                      <div className="text-sm">
+                        <div className="text-gray-600 mb-1">Processing Time:</div>
+                        <div className="text-gray-800 font-mono">
+                          {currentAnalysis.processing_time_seconds.toFixed(1)}s
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Risk Assessment */}
+                    {currentAnalysis.risk_assessment && (
+                      <div className="border-t pt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-1">
+                            <AlertTriangle className="w-4 h-4 text-orange-500" />
+                            <span className="text-sm font-semibold text-gray-700">Risk Assessment</span>
+                          </div>
+                          <div 
+                            className="px-2 py-1 rounded text-xs font-bold text-white"
+                            style={{ backgroundColor: getRiskColor(currentAnalysis.risk_assessment.severity) }}
+                          >
+                            {currentAnalysis.risk_assessment.severity}
+                          </div>
+                        </div>
+                        
+                        <div className="mb-2">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-gray-600">Risk Level:</span>
+                            <span className="font-semibold">
+                              {(currentAnalysis.risk_assessment.risk_level * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="h-2 rounded-full transition-all duration-300"
+                              style={{ 
+                                width: `${currentAnalysis.risk_assessment.risk_level * 100}%`,
+                                backgroundColor: getRiskColor(currentAnalysis.risk_assessment.severity)
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          {currentAnalysis.risk_assessment.rationale}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Demo Mode Indicator */}
+                    {currentAnalysis.demo_mode && (
+                      <div className="border-t pt-2">
+                        <div className="bg-blue-50 border border-blue-200 rounded px-2 py-1">
+                          <div className="flex items-center space-x-1">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                            <span className="text-xs text-blue-700 font-medium">Demo Mode</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Popup>
-          </Marker>
-        )}
-      </MapContainer>
+              </Popup>
+            </Marker>
+          )}
+        </MapContainer>
+      </div>
 
       {/* Map Instructions Overlay */}
       {!currentAnalysis && !isAnalyzing && (

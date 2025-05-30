@@ -677,28 +677,34 @@ async def get_demo_locations():
     return {
         "locations": [
             {
-                "name": "West Maui (High Risk)",
-                "latitude": 20.9801,
-                "longitude": -156.6927,
-                "description": "Dry grasslands near power infrastructure"
+                "name": "West Maui (Lahaina)",
+                "latitude": 20.8783,
+                "longitude": -156.6825,
+                "description": "High-risk wildfire area with dry vegetation near Lahaina"
+            },
+            {
+                "name": "Central Maui",
+                "latitude": 20.8893,
+                "longitude": -156.4729,
+                "description": "Moderate risk area with mixed vegetation and infrastructure"
             },
             {
                 "name": "Big Island Volcano Area",
                 "latitude": 19.7633,
                 "longitude": -155.5739,
-                "description": "Active volcanic region with vegetation"
+                "description": "Active volcanic region with stressed vegetation"
             },
             {
                 "name": "Oahu North Shore",
                 "latitude": 21.6389,
                 "longitude": -158.0001,
-                "description": "Coastal area with moderate vegetation"
+                "description": "Coastal area with moderate vegetation density"
             },
             {
                 "name": "Kauai Interior",
                 "latitude": 22.0964,
                 "longitude": -159.5261,
-                "description": "Dense forest area, lower fire risk"
+                "description": "Dense forest area with lower fire risk potential"
             }
         ]
     }

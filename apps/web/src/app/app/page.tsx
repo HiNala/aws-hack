@@ -3,19 +3,35 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import Header from '../../components/Header'
-import Sidebar from '../../components/Sidebar'
-import AnalysisProgress from '../../components/AnalysisProgress'
-import ChainOfThought from '@/components/ChainOfThought'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { 
+  Flame, 
+  MapPin, 
+  Activity, 
+  AlertTriangle, 
+  Thermometer, 
+  Wind, 
+  Droplets,
+  Zap,
+  TrendingUp,
+  PlayCircle,
+  StopCircle,
+  CheckCircle2,
+  Clock,
+  Satellite,
+  CloudSun
+} from 'lucide-react'
 
 // Dynamic imports to avoid SSR issues
 const MapComponent = dynamic(() => import('../../components/MapComponent'), { 
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-full bg-dark-900">
+    <div className="flex items-center justify-center h-full bg-slate-900">
       <div className="text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p className="text-gray-400">Loading PyroGuard Sentinel...</p>
+        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p className="text-slate-400">Loading PyroGuard Sentinel...</p>
       </div>
     </div>
   )
@@ -83,7 +99,6 @@ export default function App() {
     if (authStatus === 'true' || authStatus === 'bypass') {
       setIsAuthenticated(true)
     } else {
-      // Redirect to landing page if not authenticated
       router.replace('/landing')
       return
     }
@@ -195,67 +210,74 @@ export default function App() {
         processing_time_seconds: 0
       })
 
-      // Set up Server-Sent Events for real-time progress
-      const eventSource = new EventSource(`${API_URL}/api/v1/analyze/${analysisData.analysis_id}/progress`)
-      eventSourceRef.current = eventSource
+      // Set up Server-Sent Events for real-time progress with proper error handling
+      try {
+        const eventSource = new EventSource(`${API_URL}/api/v1/analyze/${analysisData.analysis_id}/progress`)
+        eventSourceRef.current = eventSource
 
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          console.log('📡 Progress update:', data)
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            console.log('📡 Progress update:', data)
 
-          if (data.type === 'connected') {
-            console.log('✅ Connected to progress stream')
-          } else if (data.type === 'progress') {
-            // Update current analysis with new data
-            setCurrentAnalysis(prev => {
-              if (!prev) return prev
-              return {
-                ...prev,
-                status: data.status,
-                processing_time_seconds: data.processing_time || prev.processing_time_seconds,
-                weather: data.weather || prev.weather,
-                satellite: data.satellite || prev.satellite,
-                power_lines: data.power_lines || prev.power_lines,
-                risk_assessment: data.risk_assessment || prev.risk_assessment,
-                jira_ticket_url: data.jira_ticket_url || prev.jira_ticket_url
+            if (data.type === 'connected') {
+              console.log('✅ Connected to progress stream')
+            } else if (data.type === 'progress') {
+              setCurrentAnalysis(prev => {
+                if (!prev) return prev
+                return {
+                  ...prev,
+                  status: data.status,
+                  processing_time_seconds: data.processing_time || prev.processing_time_seconds,
+                  weather: data.weather || prev.weather,
+                  satellite: data.satellite || prev.satellite,
+                  power_lines: data.power_lines || prev.power_lines,
+                  risk_assessment: data.risk_assessment || prev.risk_assessment,
+                  jira_ticket_url: data.jira_ticket_url || prev.jira_ticket_url
+                }
+              })
+            } else if (data.type === 'complete') {
+              console.log('✅ Analysis complete')
+              setIsAnalyzing(false)
+              eventSource.close()
+              eventSourceRef.current = null
+              
+              if (data.status === 'completed') {
+                showNotification('🔥 Wildfire risk analysis completed successfully!', 'success')
+              } else {
+                showNotification('Analysis completed with errors', 'error')
               }
-            })
-          } else if (data.type === 'complete') {
-            console.log('✅ Analysis complete')
-            setIsAnalyzing(false)
-            eventSource.close()
-            eventSourceRef.current = null
-            
-            if (data.status === 'completed') {
-              showNotification('🔥 Wildfire risk analysis completed successfully!', 'success')
-            } else {
-              showNotification('Analysis completed with errors', 'error')
+            } else if (data.type === 'timeout') {
+              console.log('⏰ Analysis timeout')
+              setIsAnalyzing(false)
+              eventSource.close()
+              eventSourceRef.current = null
+              showNotification('Analysis taking longer than expected. Please try again.', 'error')
+            } else if (data.type === 'error') {
+              console.error('❌ Progress stream error:', data.message)
+              setIsAnalyzing(false)
+              eventSource.close()
+              eventSourceRef.current = null
+              showNotification('Analysis stream error occurred', 'error')
             }
-          } else if (data.type === 'timeout') {
-            console.log('⏰ Analysis timeout')
-            setIsAnalyzing(false)
-            eventSource.close()
-            eventSourceRef.current = null
-            showNotification('Analysis taking longer than expected. Please try again.', 'error')
-          } else if (data.type === 'error') {
-            console.error('❌ Progress stream error:', data.message)
-            setIsAnalyzing(false)
-            eventSource.close()
-            eventSourceRef.current = null
-            showNotification('Analysis stream error occurred', 'error')
+          } catch (error) {
+            console.error('Failed to parse progress data:', error)
           }
-        } catch (error) {
-          console.error('Failed to parse progress data:', error)
         }
-      }
 
-      eventSource.onerror = (error) => {
-        console.error('EventSource error:', error)
+        eventSource.onerror = (error) => {
+          console.warn('EventSource connection lost, attempting fallback...')
+          setIsAnalyzing(false)
+          if (eventSourceRef.current) {
+            eventSourceRef.current.close()
+            eventSourceRef.current = null
+          }
+          showNotification('Connection to analysis stream lost', 'error')
+        }
+      } catch (eventSourceError) {
+        console.error('Failed to create EventSource:', eventSourceError)
         setIsAnalyzing(false)
-        eventSource.close()
-        eventSourceRef.current = null
-        showNotification('Connection to analysis stream lost', 'error')
+        showNotification('Unable to establish real-time connection', 'error')
       }
 
     } catch (error) {
@@ -269,6 +291,15 @@ export default function App() {
     handleMapClick(location.latitude, location.longitude)
   }
 
+  const stopAnalysis = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+      eventSourceRef.current = null
+    }
+    setIsAnalyzing(false)
+    showNotification('Analysis stopped', 'info')
+  }
+
   // Cleanup EventSource on unmount
   useEffect(() => {
     return () => {
@@ -278,55 +309,160 @@ export default function App() {
     }
   }, [])
 
+  const getRiskColor = (severity: string) => {
+    switch (severity) {
+      case 'LOW': return 'text-green-400 bg-green-400/10 border-green-400/20'
+      case 'MEDIUM': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20'  
+      case 'HIGH': return 'text-orange-400 bg-orange-400/10 border-orange-400/20'
+      case 'EXTREME': return 'text-red-400 bg-red-400/10 border-red-400/20'
+      default: return 'text-slate-400 bg-slate-400/10 border-slate-400/20'
+    }
+  }
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-dark-900">
+      <div className="flex items-center justify-center min-h-screen bg-slate-900">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-400">Checking authentication...</p>
+          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-slate-400">Checking authentication...</p>
         </div>
       </div>
     )
   }
 
   if (!isAuthenticated) {
-    return null // Will redirect to landing
+    return null
   }
 
   return (
-    <main className="flex flex-col h-screen bg-dark-900 text-white overflow-hidden">
-      {/* Header */}
-      <Header 
-        demoMode={demoMode} 
-        onDemoModeToggle={setDemoMode}
-        connectionStatus={connectionStatus}
-        currentAnalysis={currentAnalysis}
-        onLogout={handleLogout}
-      />
+    <div className="h-screen bg-slate-900 text-white flex flex-col">
+      {/* Modern Header */}
+      <header className="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/50 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Flame className="w-6 h-6 text-orange-500" />
+              <h1 className="text-xl font-bold text-white">PyroGuard Sentinel</h1>
+            </div>
+            <Badge variant="outline" className="text-xs text-slate-400 border-slate-600">
+              AWS MCP Agents Hackathon 2024
+            </Badge>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${demoMode ? 'text-blue-400 border-blue-400/30' : 'text-slate-400 border-slate-600'}`}
+            >
+              {demoMode ? 'Demo Mode' : 'Live Mode'}
+            </Badge>
+            
+            <div className="flex items-center space-x-2">
+              <div className={`w-2 h-2 rounded-full ${
+                connectionStatus === 'connected' ? 'bg-green-400' :
+                connectionStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
+                'bg-red-400'
+              }`} />
+              <span className="text-xs text-slate-400">
+                {connectionStatus === 'connected' ? 'Connected' :
+                 connectionStatus === 'connecting' ? 'Connecting...' :
+                 'Offline'}
+              </span>
+            </div>
+
+            {currentAnalysis && (
+              <Badge 
+                variant="outline" 
+                className={`text-xs ${
+                  currentAnalysis.status === 'processing' ? 'text-blue-400 border-blue-400/30' :
+                  currentAnalysis.status === 'completed' ? 'text-green-400 border-green-400/30' :
+                  'text-slate-400 border-slate-600'
+                }`}
+              >
+                {currentAnalysis.status === 'processing' ? 'Analysis Running...' :
+                 currentAnalysis.status === 'completed' ? 'Analysis Complete' :
+                 'Ready'}
+              </Badge>
+            )}
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleLogout}
+              className="text-slate-400 border-slate-600 hover:bg-slate-700"
+            >
+              Logout
+            </Button>
+          </div>
+        </div>
+      </header>
 
       {/* Notification */}
       {notification && (
-        <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-lg border ${
-          notification.type === 'success' ? 'bg-green-900 border-green-500 text-green-100' :
-          notification.type === 'error' ? 'bg-red-900 border-red-500 text-red-100' :
-          'bg-blue-900 border-blue-500 text-blue-100'
-        } transition-all duration-300 transform animate-in slide-in-from-top-4`}>
+        <div className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded-lg shadow-lg border backdrop-blur-md ${
+          notification.type === 'success' ? 'bg-green-900/90 border-green-500/50 text-green-100' :
+          notification.type === 'error' ? 'bg-red-900/90 border-red-500/50 text-red-100' :
+          'bg-blue-900/90 border-blue-500/50 text-blue-100'
+        } transition-all duration-300 animate-in slide-in-from-top-4`}>
           <p className="text-sm font-medium">{notification.message}</p>
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <Sidebar 
-          demoLocations={demoLocations}
-          onLocationSelect={handleDemoLocationClick}
-          isAnalyzing={isAnalyzing}
-          currentAnalysis={currentAnalysis}
-        />
+      {/* Main Layout */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Panel - Demo Locations */}
+        <div className="w-72 bg-slate-800/50 border-r border-slate-700/50 p-3 overflow-y-auto flex-shrink-0">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-white mb-2">Demo Locations</h2>
+            <p className="text-sm text-slate-400 mb-4">
+              Select a location for wildfire risk analysis
+            </p>
+          </div>
 
-        {/* Main content area */}
-        <div className="flex-1 relative">
-          {/* Map */}
+          <div className="space-y-2">
+            {demoLocations.map((location, index) => (
+              <Card 
+                key={index}
+                className="bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 transition-colors cursor-pointer"
+                onClick={() => handleDemoLocationClick(location)}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <MapPin className="w-4 h-4 text-blue-400" />
+                    <h3 className="font-medium text-white text-sm">{location.name}</h3>
+                  </div>
+                  <p className="text-xs text-slate-400 mb-2">{location.description}</p>
+                  <div className="text-xs text-slate-500 font-mono">
+                    {location.latitude.toFixed(4)}°N, {Math.abs(location.longitude).toFixed(4)}°W
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Quick Analysis Button for West Maui */}
+          <Card className="bg-orange-500/10 border-orange-500/30 mt-4">
+            <CardContent className="p-3">
+              <div className="flex items-center space-x-2 mb-2">
+                <Flame className="w-4 h-4 text-orange-400" />
+                <h3 className="font-medium text-orange-400 text-sm">Quick Analysis</h3>
+              </div>
+              <p className="text-xs text-slate-400 mb-3">
+                Start analysis at West Maui (high-risk area)
+              </p>
+              <Button 
+                onClick={() => handleMapClick(20.8783, -156.6825)}
+                disabled={isAnalyzing}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs py-2"
+              >
+                {isAnalyzing ? 'Running...' : 'Analyze West Maui'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Center - Map */}
+        <div className="flex-1 relative min-w-0">
           <MapComponent 
             onLocationClick={handleMapClick} 
             demoMode={demoMode}
@@ -335,69 +471,284 @@ export default function App() {
             demoLocations={demoLocations}
           />
 
-          {/* Enhanced Chain of Thought Reasoning */}
-          {currentAnalysis && (
-            <div className="absolute top-4 left-4 z-[1000] max-w-md max-h-[calc(100vh-120px)] overflow-y-auto">
-              <ChainOfThought 
-                analysisId={currentAnalysis.analysis_id}
-                coordinates={currentAnalysis.coordinates}
-                realTime={true}
-              />
-            </div>
-          )}
-
-          {/* Analysis Progress Overlay */}
-          {currentAnalysis && (
-            <div className="absolute top-4 right-4 z-[1000] max-h-[calc(100vh-120px)] overflow-y-auto">
-              <AnalysisProgress 
-                analysis={currentAnalysis} 
-                demoMode={demoMode}
-              />
-            </div>
-          )}
-
-          {/* Quick Action Panel */}
+          {/* Map Instructions Overlay */}
           {!currentAnalysis && !isAnalyzing && (
-            <div className="absolute bottom-4 left-4 z-[1000]">
-              <div className="bg-dark-900/95 backdrop-blur-md border border-gray-700 rounded-lg p-4 max-w-sm">
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  🔥 PyroGuard Sentinel
-                </h3>
-                <p className="text-sm text-gray-400 mb-3">
-                  Click anywhere on the Hawaiian Islands to start real-time wildfire risk analysis
-                </p>
-                <div className="flex items-center space-x-2 text-xs">
-                  <div className={`w-2 h-2 rounded-full ${
-                    connectionStatus === 'connected' ? 'bg-green-400' :
-                    connectionStatus === 'connecting' ? 'bg-yellow-400 animate-pulse' :
-                    'bg-red-400'
-                  }`}></div>
-                  <span className="text-gray-500">
-                    {connectionStatus === 'connected' ? 'API Connected' :
-                     connectionStatus === 'connecting' ? 'Connecting...' :
-                     'API Offline'}
-                  </span>
-                </div>
-              </div>
+            <div className="absolute top-4 left-4 z-[1000]">
+              <Card className="bg-slate-800/90 backdrop-blur-md border-slate-600/50 max-w-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Activity className="w-5 h-5 text-blue-400" />
+                    <h3 className="font-semibold text-white">Map Instructions</h3>
+                  </div>
+                  <p className="text-sm text-slate-400">
+                    Click anywhere on the Hawaiian Islands to start real-time wildfire risk analysis.
+                    Focus area: West Maui (Lahaina region)
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           )}
 
-          {/* Loading Overlay */}
+          {/* Analysis Loading Overlay */}
           {isAnalyzing && !currentAnalysis && (
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-[999] flex items-center justify-center">
-              <div className="bg-dark-900 border border-gray-700 rounded-lg p-8 text-center">
-                <div className="animate-spin w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  Initializing Analysis
-                </h3>
-                <p className="text-gray-400">
-                  Preparing wildfire risk assessment...
-                </p>
-              </div>
+              <Card className="bg-slate-800/90 backdrop-blur-md border-slate-600/50">
+                <CardContent className="p-8 text-center">
+                  <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <h3 className="text-lg font-semibold text-white mb-2">Analyzing Wildfire Risk</h3>
+                  <p className="text-slate-400 mb-4">Processing real-time satellite data...</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={stopAnalysis}
+                    className="text-red-400 border-red-400/30 hover:bg-red-400/10"
+                  >
+                    <StopCircle className="w-4 h-4 mr-1" />
+                    Stop Analysis
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
+
+        {/* Right Panel - Analysis Results */}
+        <div className="w-80 bg-slate-800/50 border-l border-slate-700/50 p-3 overflow-y-auto flex-shrink-0">
+          {currentAnalysis ? (
+            <div className="space-y-4">
+              {/* Analysis Header */}
+              <Card className="bg-slate-700/30 border-slate-600/50">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base text-white">West Maui Analysis</CardTitle>
+                    {isAnalyzing ? (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={stopAnalysis}
+                        className="text-red-400 border-red-400/30 hover:bg-red-400/10"
+                      >
+                        <StopCircle className="w-3 h-3 mr-1" />
+                        Stop
+                      </Button>
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4 text-green-400" />
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-400">Location:</span>
+                      <span className="text-white font-mono text-xs">
+                        {currentAnalysis.coordinates.latitude.toFixed(4)}°N, {Math.abs(currentAnalysis.coordinates.longitude).toFixed(4)}°W
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-slate-400">Status:</span>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${
+                          currentAnalysis.status === 'processing' ? 'text-blue-400 border-blue-400/30' :
+                          'text-green-400 border-green-400/30'
+                        }`}
+                      >
+                        {currentAnalysis.status === 'processing' ? (
+                          <>
+                            <Activity className="w-3 h-3 mr-1 animate-pulse" />
+                            Processing
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Complete
+                          </>
+                        )}
+                      </Badge>
+                    </div>
+                    {currentAnalysis.processing_time_seconds && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400">Time:</span>
+                        <span className="text-white font-mono text-xs">
+                          {currentAnalysis.processing_time_seconds.toFixed(1)}s
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Risk Assessment */}
+              {currentAnalysis.risk_assessment && (
+                <Card className="bg-slate-700/30 border-slate-600/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg text-white flex items-center">
+                      <AlertTriangle className="w-5 h-5 mr-2 text-orange-400" />
+                      Risk Assessment
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Risk Level:</span>
+                        <Badge 
+                          variant="outline" 
+                          className={getRiskColor(currentAnalysis.risk_assessment.severity)}
+                        >
+                          {currentAnalysis.risk_assessment.severity}
+                        </Badge>
+                      </div>
+                      
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-slate-400">Probability:</span>
+                          <span className="text-white font-semibold">
+                            {(currentAnalysis.risk_assessment.risk_level * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-700 rounded-full h-2">
+                          <div
+                            className="h-2 rounded-full transition-all duration-500"
+                            style={{ 
+                              width: `${currentAnalysis.risk_assessment.risk_level * 100}%`,
+                              backgroundColor: currentAnalysis.risk_assessment.severity === 'LOW' ? '#10b981' :
+                                             currentAnalysis.risk_assessment.severity === 'MEDIUM' ? '#f59e0b' :
+                                             currentAnalysis.risk_assessment.severity === 'HIGH' ? '#f97316' : '#ef4444'
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-slate-400 text-sm">Analysis:</span>
+                        <p className="text-slate-300 text-sm mt-1 leading-relaxed">
+                          {currentAnalysis.risk_assessment.rationale}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Weather Conditions */}
+              {currentAnalysis.weather && (
+                <Card className="bg-slate-700/30 border-slate-600/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg text-white flex items-center">
+                      <CloudSun className="w-5 h-5 mr-2 text-yellow-400" />
+                      Weather Conditions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <Thermometer className="w-4 h-4 text-red-400" />
+                        <div>
+                          <div className="text-slate-400">Temperature</div>
+                          <div className="text-white font-semibold">{currentAnalysis.weather.temperature_f}°F</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Droplets className="w-4 h-4 text-blue-400" />
+                        <div>
+                          <div className="text-slate-400">Humidity</div>
+                          <div className="text-white font-semibold">{currentAnalysis.weather.humidity_percent}%</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Wind className="w-4 h-4 text-cyan-400" />
+                        <div>
+                          <div className="text-slate-400">Wind Speed</div>
+                          <div className="text-white font-semibold">{currentAnalysis.weather.wind_speed_mph} mph</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <CloudSun className="w-4 h-4 text-yellow-400" />
+                        <div>
+                          <div className="text-slate-400">Conditions</div>
+                          <div className="text-white font-semibold">{currentAnalysis.weather.conditions}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Satellite Data */}
+              {currentAnalysis.satellite && (
+                <Card className="bg-slate-700/30 border-slate-600/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg text-white flex items-center">
+                      <Satellite className="w-5 h-5 mr-2 text-purple-400" />
+                      Satellite Data
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Dryness Score:</span>
+                        <span className="text-white font-semibold">
+                          {(currentAnalysis.satellite.dryness_score * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Confidence:</span>
+                        <span className="text-white font-semibold">
+                          {(currentAnalysis.satellite.confidence * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      {currentAnalysis.satellite.tile_date && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Image Date:</span>
+                          <span className="text-white font-mono text-xs">
+                            {currentAnalysis.satellite.tile_date}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Power Infrastructure */}
+              {currentAnalysis.power_lines && (
+                <Card className="bg-slate-700/30 border-slate-600/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg text-white flex items-center">
+                      <Zap className="w-5 h-5 mr-2 text-yellow-400" />
+                      Power Infrastructure
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Lines Detected:</span>
+                        <span className="text-white font-semibold">
+                          {currentAnalysis.power_lines.count}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Nearest Distance:</span>
+                        <span className="text-white font-semibold">
+                          {currentAnalysis.power_lines.nearest_distance_m}m
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-400 mb-2">Agent Ready</h3>
+              <p className="text-sm text-slate-500">
+                Start an analysis to see the PyroGuard agent's reasoning process in real-time
+              </p>
             </div>
           )}
         </div>
       </div>
-    </main>
+    </div>
   )
 } 

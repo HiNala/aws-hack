@@ -67,7 +67,7 @@ export default function LandingPage() {
             variant: "outline"
           },
           {
-            label: "Emergency Login",
+            label: "Bypass Login",
             href: "#",
             variant: "default"
           }
@@ -78,49 +78,49 @@ export default function LandingPage() {
       <PyroGuardFeatures />
 
       {/* Solutions Section */}
-      <section id="solutions" className="py-16 md:py-32">
-        <div className="mx-auto max-w-7xl px-6">
+      <section id="solutions" className="py-20 md:py-32 bg-muted/30">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-balance text-4xl font-semibold lg:text-5xl">Wildfire Solutions for Hawaii</h2>
-            <p className="mt-4 text-muted-foreground max-w-3xl mx-auto">
+            <h2 className="text-balance text-4xl font-semibold tracking-tight lg:text-5xl mb-6">Wildfire Solutions for Hawaii</h2>
+            <p className="mt-4 text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Tailored for Hawaii's unique environment, terrain, and emergency response needs.
             </p>
           </div>
           
-          <div className="grid gap-8 md:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <Shield className="h-12 w-12 text-blue-600 mb-4" />
-                <CardTitle>Emergency Services</CardTitle>
+          <div className="grid gap-8 md:grid-cols-3 lg:gap-12">
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="pb-6">
+                <Shield className="h-14 w-14 text-blue-600 mb-6" />
+                <CardTitle className="text-xl">Emergency Services</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
+              <CardContent className="pt-0">
+                <p className="text-muted-foreground leading-relaxed">
                   Real-time incident management, resource coordination, and automated response protocols 
                   for fire departments, emergency management, and first responders.
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <Zap className="h-12 w-12 text-yellow-600 mb-4" />
-                <CardTitle>Utility Companies</CardTitle>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="pb-6">
+                <Zap className="h-14 w-14 text-yellow-600 mb-6" />
+                <CardTitle className="text-xl">Utility Companies</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
+              <CardContent className="pt-0">
+                <p className="text-muted-foreground leading-relaxed">
                   Power line monitoring, equipment health assessment, and predictive maintenance 
                   to prevent utility-caused ignitions and ensure grid safety.
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <AlertTriangle className="h-12 w-12 text-red-600 mb-4" />
-                <CardTitle>Community Safety</CardTitle>
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="pb-6">
+                <AlertTriangle className="h-14 w-14 text-red-600 mb-6" />
+                <CardTitle className="text-xl">Community Safety</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
+              <CardContent className="pt-0">
+                <p className="text-muted-foreground leading-relaxed">
                   Public alert systems, evacuation planning, and community preparedness tools 
                   to keep residents informed and safe during wildfire events.
                 </p>
@@ -130,81 +130,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="bg-muted/50 py-16 md:py-32">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-balance text-4xl font-semibold lg:text-5xl">Emergency Response Pricing</h2>
-            <p className="mt-4 text-muted-foreground max-w-3xl mx-auto">
-              Flexible pricing for emergency services, utility companies, and government agencies.
-            </p>
-          </div>
-          
-          <div className="grid gap-8 md:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Basic Monitoring</CardTitle>
-                <div className="text-3xl font-bold">$5,000<span className="text-lg text-muted-foreground">/month</span></div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li>• Satellite imagery analysis</li>
-                  <li>• Basic weather integration</li>
-                  <li>• Email alerts</li>
-                  <li>• Monthly reports</li>
-                  <li>• Standard support</li>
-                </ul>
-                <Button className="w-full mt-6" variant="outline">Contact Sales</Button>
-              </CardContent>
-            </Card>
-
-            <Card className="ring-2 ring-primary">
-              <CardHeader>
-                <CardTitle>Emergency Response</CardTitle>
-                <div className="text-3xl font-bold">$15,000<span className="text-lg text-muted-foreground">/month</span></div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li>• All Basic features</li>
-                  <li>• Real-time AI analysis</li>
-                  <li>• Automated incident management</li>
-                  <li>• 24/7 monitoring</li>
-                  <li>• Priority support</li>
-                  <li>• Custom integrations</li>
-                </ul>
-                <Button className="w-full mt-6" onClick={handleLogin}>
-                  {isLoading ? 'Connecting...' : 'Start Emergency Access'}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Enterprise</CardTitle>
-                <div className="text-3xl font-bold">Custom<span className="text-lg text-muted-foreground">/pricing</span></div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li>• All Emergency features</li>
-                  <li>• Multi-region coverage</li>
-                  <li>• Advanced analytics</li>
-                  <li>• Dedicated support team</li>
-                  <li>• Custom AI models</li>
-                  <li>• White-label solutions</li>
-                </ul>
-                <Button className="w-full mt-6" variant="outline">Contact Enterprise</Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
       {/* About Section */}
-      <section id="about" className="py-16 md:py-32">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="text-center">
-            <h2 className="text-balance text-4xl font-semibold lg:text-5xl">About PyroGuard Sentinel</h2>
-            <div className="mt-8 max-w-4xl mx-auto space-y-6 text-lg text-muted-foreground">
+      <section id="about" className="py-20 md:py-32">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="text-center max-w-4xl mx-auto">
+            <h2 className="text-balance text-4xl font-semibold tracking-tight lg:text-5xl mb-8">About PyroGuard Sentinel</h2>
+            <div className="mt-8 space-y-8 text-lg text-muted-foreground leading-relaxed">
               <p>
                 PyroGuard Sentinel was developed in response to Hawaii's increasing wildfire risks, 
                 combining cutting-edge AI technology with comprehensive environmental monitoring.
@@ -222,30 +153,50 @@ export default function LandingPage() {
             </div>
 
             {/* Hackathon Auth Options */}
-            <div className="mt-12 p-6 border border-dashed border-gray-300 rounded-lg bg-gray-50/50">
-              <h3 className="text-xl font-semibold mb-4">🏆 Hackathon Access Options</h3>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Button onClick={handleDemo} variant="outline" size="lg">
+            <div className="mt-16 p-8 border border-dashed border-primary/30 rounded-xl bg-primary/5 backdrop-blur-sm">
+              <h3 className="text-2xl font-semibold mb-6 text-primary">🏆 Hackathon Access Options</h3>
+              <div className="flex flex-wrap justify-center gap-4 mb-6">
+                <Button onClick={handleDemo} variant="outline" size="lg" className="min-w-[160px]">
                   Demo Mode (No Auth)
                 </Button>
-                <Button onClick={handleLogin} size="lg" disabled={isLoading}>
-                  {isLoading ? 'Authenticating...' : 'Emergency Login (OAuth)'}
+                <Button onClick={handleLogin} size="lg" disabled={isLoading} className="min-w-[160px]">
+                  {isLoading ? 'Authenticating...' : 'Bypass Login (OAuth)'}
                 </Button>
-                <Button onClick={handleBypassAuth} variant="secondary" size="lg">
+                <Button onClick={handleBypassAuth} variant="secondary" size="lg" className="min-w-[160px]">
                   🛠️ Hackathon Bypass
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground mt-4">
+              <p className="text-sm text-muted-foreground">
                 For the hackathon demonstration. In production, only OAuth authentication would be available.
               </p>
+            </div>
+
+            {/* Technology Stack */}
+            <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="text-2xl font-bold text-primary mb-1">AWS S3</div>
+                <div className="text-sm text-muted-foreground">Satellite Imagery</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="text-2xl font-bold text-primary mb-1">Clarifai</div>
+                <div className="text-sm text-muted-foreground">AI Analysis</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="text-2xl font-bold text-primary mb-1">NOAA</div>
+                <div className="text-sm text-muted-foreground">Weather Data</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="text-2xl font-bold text-primary mb-1">Make.com</div>
+                <div className="text-sm text-muted-foreground">Automation</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-12">
-        <div className="mx-auto max-w-7xl px-6">
+      <footer className="border-t py-12 bg-muted/30">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
               <Shield className="h-6 w-6 text-red-500" />
