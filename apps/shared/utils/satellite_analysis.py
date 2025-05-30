@@ -284,12 +284,12 @@ Where:
             response = await client.post(
                 "https://api.anthropic.com/v1/messages",
                 headers={
-                    "Authorization": f"Bearer {ANTHROPIC_API_KEY}",
+                    "x-api-key": ANTHROPIC_API_KEY,
                     "Content-Type": "application/json",
                     "anthropic-version": "2023-06-01"
                 },
                 json={
-                    "model": "claude-3-sonnet-20240229",
+                    "model": "claude-3-5-sonnet-20241022",
                     "max_tokens": 200,
                     "messages": [
                         {
@@ -299,7 +299,7 @@ Where:
                                     "type": "image",
                                     "source": {
                                         "type": "base64",
-                                        "media_type": "image/png",
+                                        "media_type": "image/jpeg",
                                         "data": image_base64
                                     }
                                 },
@@ -316,6 +316,7 @@ Where:
             
             if response.status_code != 200:
                 logger.error(f"❌ Anthropic API error: HTTP {response.status_code}")
+                logger.error(f"Response: {response.text}")
                 return -1.0, 0.0, "Anthropic Vision API (API error)"
             
             response_data = response.json()
@@ -430,12 +431,12 @@ async def test_satellite_analysis_systems() -> Dict[str, Any]:
                 response = await client.post(
                     "https://api.anthropic.com/v1/messages",
                     headers={
-                        "Authorization": f"Bearer {ANTHROPIC_API_KEY}",
+                        "x-api-key": ANTHROPIC_API_KEY,
                         "Content-Type": "application/json",
                         "anthropic-version": "2023-06-01"
                     },
                     json={
-                        "model": "claude-3-sonnet-20240229",
+                        "model": "claude-3-5-sonnet-20241022",
                         "max_tokens": 10,
                         "messages": [{"role": "user", "content": "test"}]
                     },
