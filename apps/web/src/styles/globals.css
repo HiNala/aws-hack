@@ -91,23 +91,58 @@
 @layer components {
   /* Leaflet map fixes for dark theme */
   .leaflet-container {
-    @apply bg-dark-900;
+    @apply bg-slate-900;
+    position: relative !important;
+    z-index: 0 !important;
   }
   
   .leaflet-control-zoom a {
-    @apply bg-dark-800 border-gray-600 text-white;
+    @apply bg-slate-800 border-slate-600 text-white;
   }
   
   .leaflet-control-zoom a:hover {
-    @apply bg-dark-700;
+    @apply bg-slate-700;
   }
   
   .leaflet-popup-content-wrapper {
-    @apply bg-dark-800 text-white;
+    @apply bg-white text-gray-900;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   }
   
   .leaflet-popup-tip {
-    @apply bg-dark-800;
+    @apply bg-white;
+  }
+  
+  /* West Maui marker special styling */
+  .west-maui-marker {
+    z-index: 1000 !important;
+    filter: drop-shadow(0 4px 8px rgba(251, 146, 60, 0.4));
+    animation: priority-pulse 3s ease-in-out infinite;
+  }
+  
+  @keyframes priority-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  
+  .west-maui-popup .leaflet-popup-content-wrapper {
+    @apply bg-orange-50 border-2 border-orange-200;
+  }
+  
+  .west-maui-popup .leaflet-popup-tip {
+    @apply bg-orange-50 border-orange-200;
+  }
+  
+  /* Analysis marker styling */
+  .analysis-marker {
+    z-index: 999 !important;
+    filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+  }
+  
+  .demo-marker {
+    z-index: 998 !important;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
   }
   
   /* Custom risk indicator styles */
@@ -127,6 +162,36 @@
     @apply bg-red-500 border-red-400;
   }
   
+  /* Slate-themed scrollbars */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #475569 #1e293b;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-track-slate-800 {
+    scrollbar-color: #475569 #1e293b;
+  }
+  
+  .scrollbar-track-slate-800::-webkit-scrollbar-track {
+    background: #1e293b;
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thumb-slate-600::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 3px;
+    border: 1px solid #334155;
+  }
+  
+  .scrollbar-thumb-slate-600::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+  }
+  
   /* Progress animation */
   .progress-bar {
     @apply relative overflow-hidden;
@@ -144,27 +209,42 @@
     100% { transform: translateX(100%); }
   }
   
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #4a5568 #2d3748;
+  /* Overlay z-index management */
+  .overlay-instructions {
+    z-index: 800 !important;
   }
   
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+  .overlay-chain-of-thought {
+    z-index: 900 !important;
   }
   
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #2d3748;
-    border-radius: 3px;
+  .overlay-loading {
+    z-index: 1000 !important;
   }
   
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #4a5568;
-    border-radius: 3px;
+  /* Smooth slide-in animations */
+  .animate-in {
+    animation-fill-mode: both;
   }
   
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #718096;
+  .slide-in-from-top-4 {
+    animation: slide-in-from-top-4 0.3s ease-out;
+  }
+  
+  @keyframes slide-in-from-top-4 {
+    from {
+      opacity: 0;
+      transform: translateY(-1rem) translateX(-50%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) translateX(-50%);
+    }
+  }
+  
+  /* Panel border improvements */
+  .panel-border-gradient {
+    background: linear-gradient(180deg, rgba(71, 85, 105, 0.5) 0%, rgba(71, 85, 105, 0.2) 100%);
   }
 }
 

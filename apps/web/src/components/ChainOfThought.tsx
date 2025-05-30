@@ -315,7 +315,7 @@ export default function ChainOfThought({
   }
 
   return (
-    <Card className={`w-full max-w-md bg-dark-900/95 backdrop-blur-md border-gray-700 text-white ${className}`}>
+    <Card className={`overlay-chain-of-thought w-full max-w-md bg-slate-800/95 backdrop-blur-md border-slate-600/50 text-white shadow-xl ${className}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -325,7 +325,7 @@ export default function ChainOfThought({
               variant="ghost"
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="h-6 w-6 p-0"
+              className="h-6 w-6 p-0 text-slate-400 hover:text-white"
             >
               {isExpanded ? 
                 <ChevronDown className="w-4 h-4" /> : 
@@ -338,7 +338,7 @@ export default function ChainOfThought({
               variant="ghost"
               size="sm"
               onClick={handleToggleReasoning}
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 text-slate-400 hover:text-white"
             >
               {isActive ? 
                 <Pause className="w-4 h-4" /> : 
@@ -349,24 +349,24 @@ export default function ChainOfThought({
               variant="ghost"
               size="sm"
               onClick={handleRestart}
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 text-slate-400 hover:text-white"
             >
               <RotateCcw className="w-4 h-4" />
             </Button>
           </div>
         </div>
         
-        <div className="flex items-center gap-2 text-sm text-gray-400">
+        <div className="flex items-center gap-2 text-sm text-slate-400">
           <span>Location: {coordinates.latitude.toFixed(4)}°, {coordinates.longitude.toFixed(4)}°</span>
         </div>
         
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-gray-500">Auto-scroll:</span>
+          <span className="text-slate-500">Auto-scroll:</span>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setAutoScroll(!autoScroll)}
-            className={`h-5 text-xs px-2 ${autoScroll ? 'text-blue-400' : 'text-gray-500'}`}
+            className={`h-5 text-xs px-2 ${autoScroll ? 'text-blue-400' : 'text-slate-500'}`}
           >
             {autoScroll ? 'ON' : 'OFF'}
           </Button>
@@ -384,11 +384,11 @@ export default function ChainOfThought({
             <CardContent className="pt-0">
               <div 
                 ref={scrollRef}
-                className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar"
+                className="space-y-3 max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600"
               >
                 {reasoningSteps.map((step, index) => {
                   const PhaseIcon = REASONING_PHASES[index]?.icon || Brain
-                  const phaseColor = REASONING_PHASES[index]?.color || 'text-gray-500'
+                  const phaseColor = REASONING_PHASES[index]?.color || 'text-slate-500'
                   
                   return (
                     <motion.div
@@ -401,7 +401,7 @@ export default function ChainOfThought({
                           ? 'border-blue-500 bg-blue-500/10' 
                           : step.status === 'complete'
                           ? 'border-green-500 bg-green-500/10'
-                          : 'border-gray-600 bg-gray-800/50'
+                          : 'border-slate-600 bg-slate-800/50'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -427,7 +427,7 @@ export default function ChainOfThought({
                       {/* Show API calls for this phase */}
                       {REASONING_PHASES[index]?.api_calls && step.status === 'processing' && (
                         <div className="mb-2">
-                          <div className="text-xs text-gray-400 mb-1 font-semibold">API Calls:</div>
+                          <div className="text-xs text-slate-400 mb-1 font-semibold">API Calls:</div>
                           {REASONING_PHASES[index].api_calls.map((apiCall, callIndex) => (
                             <div key={callIndex} className="text-xs text-green-400 font-mono bg-green-950/20 px-2 py-1 rounded mb-1 border border-green-500/20">
                               📡 {apiCall}
@@ -443,7 +443,7 @@ export default function ChainOfThought({
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: detailIndex * 0.2 }}
-                            className="text-xs text-gray-300 leading-relaxed"
+                            className="text-xs text-slate-300 leading-relaxed"
                           >
                             {detail}
                           </motion.div>
@@ -451,7 +451,7 @@ export default function ChainOfThought({
                       </div>
                       
                       {step.processing_time && (
-                        <div className="text-xs text-gray-500 mt-2">
+                        <div className="text-xs text-slate-500 mt-2">
                           ⏱️ {step.processing_time.toFixed(1)}s
                         </div>
                       )}
@@ -461,14 +461,14 @@ export default function ChainOfThought({
               </div>
               
               {reasoningSteps.length > 0 && (
-                <div className="mt-4 p-2 bg-gray-800/50 rounded border border-gray-600">
+                <div className="mt-4 p-2 bg-slate-800/50 rounded border border-slate-600">
                   <div className="flex items-center gap-2 text-xs">
                     <TrendingUp className="w-4 h-4 text-indigo-400" />
-                    <span className="text-gray-300">
+                    <span className="text-slate-300">
                       Analysis Progress: {currentPhase + 1}/{REASONING_PHASES.length}
                     </span>
                     <div className="ml-auto flex items-center gap-1">
-                      <div className="w-20 bg-gray-700 rounded-full h-1">
+                      <div className="w-20 bg-slate-700 rounded-full h-1">
                         <div 
                           className="bg-indigo-500 h-1 rounded-full transition-all duration-500"
                           style={{ width: `${((currentPhase + 1) / REASONING_PHASES.length) * 100}%` }}

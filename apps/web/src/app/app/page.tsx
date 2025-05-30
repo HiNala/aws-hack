@@ -440,73 +440,75 @@ function AppContent() {
       {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Demo Locations */}
-        <div className="w-72 bg-slate-800/50 border-r border-slate-700/50 p-3 overflow-y-auto flex-shrink-0">
-          <div className="mb-4">
+        <div className="w-72 bg-slate-800/50 border-r border-slate-700/50 flex flex-col flex-shrink-0">
+          <div className="p-3 border-b border-slate-700/50">
             <h2 className="text-lg font-semibold text-white mb-2">Demo Locations</h2>
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-sm text-slate-400">
               Select a location for wildfire risk analysis
             </p>
           </div>
 
-          <div className="space-y-2">
-            {demoLocations.map((location, index) => (
-              <Card 
-                key={index}
-                className="bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 transition-colors cursor-pointer"
-                onClick={() => handleDemoLocationClick(location)}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <MapPin className="w-4 h-4 text-blue-400" />
-                    <h3 className="font-medium text-white text-sm">{location.name}</h3>
-                  </div>
-                  <p className="text-xs text-slate-400 mb-2">{location.description}</p>
-                  <div className="text-xs text-slate-500 font-mono">
-                    {location.latitude.toFixed(4)}°N, {Math.abs(location.longitude).toFixed(4)}°W
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Quick Analysis Button for West Maui */}
-          <div className="mt-6 p-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg">
-            <div className="flex items-center space-x-2 mb-3">
-              <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
-              <h3 className="font-semibold text-orange-300">Quick West Maui Analysis</h3>
+          <div className="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
+            <div className="space-y-2">
+              {demoLocations.map((location, index) => (
+                <Card 
+                  key={index}
+                  className="bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 transition-colors cursor-pointer"
+                  onClick={() => handleDemoLocationClick(location)}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <MapPin className="w-4 h-4 text-blue-400" />
+                      <h3 className="font-medium text-white text-sm">{location.name}</h3>
+                    </div>
+                    <p className="text-xs text-slate-400 mb-2">{location.description}</p>
+                    <div className="text-xs text-slate-500 font-mono">
+                      {location.latitude.toFixed(4)}°N, {Math.abs(location.longitude).toFixed(4)}°W
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-            <p className="text-xs text-orange-200 mb-3">
-              Priority wildfire risk area. Click to analyze current conditions at Lahaina region.
-            </p>
-            <button
-              onClick={() => handleMapClick(20.8783, -156.6825)}
-              disabled={isAnalyzing}
-              className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
-                isAnalyzing 
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:from-orange-600 hover:to-red-700 transform hover:scale-105 shadow-lg hover:shadow-orange-500/25'
-              }`}
-            >
-              {isAnalyzing ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"></div>
-                  <span>Analyzing...</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center space-x-2">
-                  <Activity className="w-5 h-5" />
-                  <span>Analyze West Maui Now</span>
-                </div>
-              )}
-            </button>
-            <div className="mt-2 text-xs text-orange-300/80 text-center">
-              🌺 Made with Aloha • Focus Area: Lahaina Region
+
+            {/* Quick Analysis Button for West Maui */}
+            <div className="mt-6 p-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg">
+              <div className="flex items-center space-x-2 mb-3">
+                <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                <h3 className="font-semibold text-orange-300">Quick West Maui Analysis</h3>
+              </div>
+              <p className="text-xs text-orange-200 mb-3">
+                Priority wildfire risk area. Click to analyze current conditions at Lahaina region.
+              </p>
+              <button
+                onClick={() => handleMapClick(20.8783, -156.6825)}
+                disabled={isAnalyzing}
+                className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                  isAnalyzing 
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:from-orange-600 hover:to-red-700 transform hover:scale-105 shadow-lg hover:shadow-orange-500/25'
+                }`}
+              >
+                {isAnalyzing ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"></div>
+                    <span>Analyzing...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center space-x-2">
+                    <Activity className="w-5 h-5" />
+                    <span>Analyze West Maui Now</span>
+                  </div>
+                )}
+              </button>
+              <div className="mt-2 text-xs text-orange-300/80 text-center">
+                🌺 Made with Aloha • Focus Area: Lahaina Region
+              </div>
             </div>
           </div>
         </div>
 
         {/* Center - Map */}
-        <div className="flex-1 relative min-w-0">
+        <div className="flex-1 relative min-w-0 overflow-hidden">
           <MapComponent 
             onLocationClick={handleMapClick} 
             demoMode={demoMode}
@@ -515,21 +517,10 @@ function AppContent() {
             demoLocations={demoLocations}
           />
 
-          {/* Chain of Thought Reasoning - Shows API calls and reasoning */}
-          {currentAnalysis && (
-            <div className="absolute top-4 left-4 z-[1000] max-w-sm">
-              <ChainOfThought 
-                analysisId={currentAnalysis.analysis_id}
-                coordinates={currentAnalysis.coordinates}
-                realTime={true}
-              />
-            </div>
-          )}
-
-          {/* Map Instructions Overlay */}
+          {/* Map Instructions Overlay - Top Left */}
           {!currentAnalysis && !isAnalyzing && (
-            <div className="absolute top-4 left-4 z-[1000]">
-              <Card className="bg-slate-800/90 backdrop-blur-md border-slate-600/50 max-w-sm">
+            <div className="absolute top-4 left-4 z-[800] max-w-sm">
+              <Card className="bg-slate-800/95 backdrop-blur-md border-slate-600/50 shadow-xl">
                 <CardContent className="p-4">
                   <div className="flex items-center space-x-2 mb-2">
                     <Activity className="w-5 h-5 text-blue-400" />
@@ -544,10 +535,21 @@ function AppContent() {
             </div>
           )}
 
-          {/* Analysis Loading Overlay */}
+          {/* Chain of Thought Reasoning - Top Right */}
+          {currentAnalysis && (
+            <div className="absolute top-4 right-4 z-[900] max-w-sm">
+              <ChainOfThought 
+                analysisId={currentAnalysis.analysis_id}
+                coordinates={currentAnalysis.coordinates}
+                realTime={true}
+              />
+            </div>
+          )}
+
+          {/* Analysis Loading Overlay - Full Screen with High Z-Index */}
           {isAnalyzing && !currentAnalysis && (
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-[999] flex items-center justify-center">
-              <Card className="bg-slate-800/90 backdrop-blur-md border-slate-600/50">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[1000] flex items-center justify-center">
+              <Card className="bg-slate-800/95 backdrop-blur-md border-slate-600/50 shadow-2xl">
                 <CardContent className="p-8 text-center">
                   <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
                   <h3 className="text-lg font-semibold text-white mb-2">Analyzing Wildfire Risk</h3>
@@ -568,240 +570,246 @@ function AppContent() {
         </div>
 
         {/* Right Panel - Analysis Results */}
-        <div className="w-80 bg-slate-800/50 border-l border-slate-700/50 p-3 overflow-y-auto flex-shrink-0">
-          {currentAnalysis ? (
-            <div className="space-y-4">
-              {/* Analysis Header */}
-              <Card className="bg-slate-700/30 border-slate-600/50">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base text-white">West Maui Analysis</CardTitle>
-                    {isAnalyzing ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={stopAnalysis}
-                        className="text-red-400 border-red-400/30 hover:bg-red-400/10"
-                      >
-                        <StopCircle className="w-3 h-3 mr-1" />
-                        Stop
-                      </Button>
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 text-green-400" />
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-400">Location:</span>
-                      <span className="text-white font-mono text-xs">
-                        {currentAnalysis.coordinates.latitude.toFixed(4)}°N, {Math.abs(currentAnalysis.coordinates.longitude).toFixed(4)}°W
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-400">Status:</span>
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs ${
-                          currentAnalysis.status === 'processing' ? 'text-blue-400 border-blue-400/30' :
-                          'text-green-400 border-green-400/30'
-                        }`}
-                      >
-                        {currentAnalysis.status === 'processing' ? (
-                          <>
-                            <Activity className="w-3 h-3 mr-1 animate-pulse" />
-                            Processing
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            Complete
-                          </>
-                        )}
-                      </Badge>
-                    </div>
-                    {currentAnalysis.processing_time_seconds && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-400">Time:</span>
-                        <span className="text-white font-mono text-xs">
-                          {currentAnalysis.processing_time_seconds.toFixed(1)}s
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+        <div className="w-80 bg-slate-800/50 border-l border-slate-700/50 flex flex-col flex-shrink-0">
+          <div className="p-3 border-b border-slate-700/50">
+            <h2 className="text-lg font-semibold text-white">Analysis Results</h2>
+          </div>
 
-              {/* Risk Assessment */}
-              {currentAnalysis.risk_assessment && (
+          <div className="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
+            {currentAnalysis ? (
+              <div className="space-y-4">
+                {/* Analysis Header */}
                 <Card className="bg-slate-700/30 border-slate-600/50">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-white flex items-center">
-                      <AlertTriangle className="w-5 h-5 mr-2 text-orange-400" />
-                      Risk Assessment
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base text-white">West Maui Analysis</CardTitle>
+                      {isAnalyzing ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={stopAnalysis}
+                          className="text-red-400 border-red-400/30 hover:bg-red-400/10"
+                        >
+                          <StopCircle className="w-3 h-3 mr-1" />
+                          Stop
+                        </Button>
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Risk Level:</span>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400">Location:</span>
+                        <span className="text-white font-mono text-xs">
+                          {currentAnalysis.coordinates.latitude.toFixed(4)}°N, {Math.abs(currentAnalysis.coordinates.longitude).toFixed(4)}°W
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400">Status:</span>
                         <Badge 
                           variant="outline" 
-                          className={getRiskColor(currentAnalysis.risk_assessment.severity)}
+                          className={`text-xs ${
+                            currentAnalysis.status === 'processing' ? 'text-blue-400 border-blue-400/30' :
+                            'text-green-400 border-green-400/30'
+                          }`}
                         >
-                          {currentAnalysis.risk_assessment.severity}
+                          {currentAnalysis.status === 'processing' ? (
+                            <>
+                              <Activity className="w-3 h-3 mr-1 animate-pulse" />
+                              Processing
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Complete
+                            </>
+                          )}
                         </Badge>
                       </div>
-                      
-                      <div>
-                        <div className="flex justify-between text-sm mb-2">
-                          <span className="text-slate-400">Probability:</span>
-                          <span className="text-white font-semibold">
-                            {(currentAnalysis.risk_assessment.risk_level * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-slate-700 rounded-full h-2">
-                          <div
-                            className="h-2 rounded-full transition-all duration-500"
-                            style={{ 
-                              width: `${currentAnalysis.risk_assessment.risk_level * 100}%`,
-                              backgroundColor: currentAnalysis.risk_assessment.severity === 'LOW' ? '#10b981' :
-                                             currentAnalysis.risk_assessment.severity === 'MEDIUM' ? '#f59e0b' :
-                                             currentAnalysis.risk_assessment.severity === 'HIGH' ? '#f97316' : '#ef4444'
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <span className="text-slate-400 text-sm">Analysis:</span>
-                        <p className="text-slate-300 text-sm mt-1 leading-relaxed">
-                          {currentAnalysis.risk_assessment.rationale}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Weather Conditions */}
-              {currentAnalysis.weather && (
-                <Card className="bg-slate-700/30 border-slate-600/50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-white flex items-center">
-                      <CloudSun className="w-5 h-5 mr-2 text-yellow-400" />
-                      Weather Conditions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <Thermometer className="w-4 h-4 text-red-400" />
-                        <div>
-                          <div className="text-slate-400">Temperature</div>
-                          <div className="text-white font-semibold">{currentAnalysis.weather.temperature_f}°F</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Droplets className="w-4 h-4 text-blue-400" />
-                        <div>
-                          <div className="text-slate-400">Humidity</div>
-                          <div className="text-white font-semibold">{currentAnalysis.weather.humidity_percent}%</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Wind className="w-4 h-4 text-cyan-400" />
-                        <div>
-                          <div className="text-slate-400">Wind Speed</div>
-                          <div className="text-white font-semibold">{currentAnalysis.weather.wind_speed_mph} mph</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <CloudSun className="w-4 h-4 text-yellow-400" />
-                        <div>
-                          <div className="text-slate-400">Conditions</div>
-                          <div className="text-white font-semibold">{currentAnalysis.weather.conditions}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Satellite Data */}
-              {currentAnalysis.satellite && (
-                <Card className="bg-slate-700/30 border-slate-600/50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-white flex items-center">
-                      <Satellite className="w-5 h-5 mr-2 text-purple-400" />
-                      Satellite Data
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Dryness Score:</span>
-                        <span className="text-white font-semibold">
-                          {(currentAnalysis.satellite.dryness_score * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Confidence:</span>
-                        <span className="text-white font-semibold">
-                          {(currentAnalysis.satellite.confidence * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                      {currentAnalysis.satellite.tile_date && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400">Image Date:</span>
+                      {currentAnalysis.processing_time_seconds && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">Time:</span>
                           <span className="text-white font-mono text-xs">
-                            {currentAnalysis.satellite.tile_date}
+                            {currentAnalysis.processing_time_seconds.toFixed(1)}s
                           </span>
                         </div>
                       )}
                     </div>
                   </CardContent>
                 </Card>
-              )}
 
-              {/* Power Infrastructure */}
-              {currentAnalysis.power_lines && (
-                <Card className="bg-slate-700/30 border-slate-600/50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-white flex items-center">
-                      <Zap className="w-5 h-5 mr-2 text-yellow-400" />
-                      Power Infrastructure
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Lines Detected:</span>
-                        <span className="text-white font-semibold">
-                          {currentAnalysis.power_lines.count}
-                        </span>
+                {/* Risk Assessment */}
+                {currentAnalysis.risk_assessment && (
+                  <Card className="bg-slate-700/30 border-slate-600/50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-white flex items-center">
+                        <AlertTriangle className="w-5 h-5 mr-2 text-orange-400" />
+                        Risk Assessment
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Risk Level:</span>
+                          <Badge 
+                            variant="outline" 
+                            className={getRiskColor(currentAnalysis.risk_assessment.severity)}
+                          >
+                            {currentAnalysis.risk_assessment.severity}
+                          </Badge>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between text-sm mb-2">
+                            <span className="text-slate-400">Probability:</span>
+                            <span className="text-white font-semibold">
+                              {(currentAnalysis.risk_assessment.risk_level * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-700 rounded-full h-2">
+                            <div
+                              className="h-2 rounded-full transition-all duration-500"
+                              style={{ 
+                                width: `${currentAnalysis.risk_assessment.risk_level * 100}%`,
+                                backgroundColor: currentAnalysis.risk_assessment.severity === 'LOW' ? '#10b981' :
+                                               currentAnalysis.risk_assessment.severity === 'MEDIUM' ? '#f59e0b' :
+                                               currentAnalysis.risk_assessment.severity === 'HIGH' ? '#f97316' : '#ef4444'
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-slate-400 text-sm">Analysis:</span>
+                          <p className="text-slate-300 text-sm mt-1 leading-relaxed">
+                            {currentAnalysis.risk_assessment.rationale}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Nearest Distance:</span>
-                        <span className="text-white font-semibold">
-                          {currentAnalysis.power_lines.nearest_distance_m}m
-                        </span>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Weather Conditions */}
+                {currentAnalysis.weather && (
+                  <Card className="bg-slate-700/30 border-slate-600/50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-white flex items-center">
+                        <CloudSun className="w-5 h-5 mr-2 text-yellow-400" />
+                        Weather Conditions
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="flex items-center space-x-2">
+                          <Thermometer className="w-4 h-4 text-red-400" />
+                          <div>
+                            <div className="text-slate-400">Temperature</div>
+                            <div className="text-white font-semibold">{currentAnalysis.weather.temperature_f}°F</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Droplets className="w-4 h-4 text-blue-400" />
+                          <div>
+                            <div className="text-slate-400">Humidity</div>
+                            <div className="text-white font-semibold">{currentAnalysis.weather.humidity_percent}%</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Wind className="w-4 h-4 text-cyan-400" />
+                          <div>
+                            <div className="text-slate-400">Wind Speed</div>
+                            <div className="text-white font-semibold">{currentAnalysis.weather.wind_speed_mph} mph</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <CloudSun className="w-4 h-4 text-yellow-400" />
+                          <div>
+                            <div className="text-slate-400">Conditions</div>
+                            <div className="text-white font-semibold">{currentAnalysis.weather.conditions}</div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-400 mb-2">Agent Ready</h3>
-              <p className="text-sm text-slate-500">
-                Start an analysis to see the PyroGuard agent's reasoning process in real-time
-              </p>
-            </div>
-          )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Satellite Data */}
+                {currentAnalysis.satellite && (
+                  <Card className="bg-slate-700/30 border-slate-600/50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-white flex items-center">
+                        <Satellite className="w-5 h-5 mr-2 text-purple-400" />
+                        Satellite Data
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Dryness Score:</span>
+                          <span className="text-white font-semibold">
+                            {(currentAnalysis.satellite.dryness_score * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Confidence:</span>
+                          <span className="text-white font-semibold">
+                            {(currentAnalysis.satellite.confidence * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        {currentAnalysis.satellite.tile_date && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400">Image Date:</span>
+                            <span className="text-white font-mono text-xs">
+                              {currentAnalysis.satellite.tile_date}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Power Infrastructure */}
+                {currentAnalysis.power_lines && (
+                  <Card className="bg-slate-700/30 border-slate-600/50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-white flex items-center">
+                        <Zap className="w-5 h-5 mr-2 text-yellow-400" />
+                        Power Infrastructure
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Lines Detected:</span>
+                          <span className="text-white font-semibold">
+                            {currentAnalysis.power_lines.count}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Nearest Distance:</span>
+                          <span className="text-white font-semibold">
+                            {currentAnalysis.power_lines.nearest_distance_m}m
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-400 mb-2">Agent Ready</h3>
+                <p className="text-sm text-slate-500">
+                  Start an analysis to see the PyroGuard agent's reasoning process in real-time
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
