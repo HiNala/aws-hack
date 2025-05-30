@@ -211,48 +211,81 @@ function getRiskColor(severity: string): string {
 // Generate fire watch zones based on analysis
 function generateFireWatchZones(analysis: AnalysisData) {
   const { latitude, longitude } = analysis.coordinates
-  const gridSize = 0.03 // Size of each zone
+  const gridSize = 0.015 // Smaller zones for better accuracy
   const zones = []
   
-  // Create a 7x7 grid of zones around the analysis point
-  for (let i = -3; i <= 3; i++) {
-    for (let j = -3; j <= 3; j++) {
+  // Better land detection for Hawaiian Islands
+  const isOnLand = (lat: number, lng: number) => {
+    // West Maui (Lahaina area) - more precise boundaries
+    if (lat >= 20.85 && lat <= 20.95 && lng >= -156.75 && lng <= -156.60) return true
+    
+    // Central/South Maui
+    if (lat >= 20.65 && lat <= 20.85 && lng >= -156.70 && lng <= -156.30) return true
+    
+    // East Maui (Haleakala area)
+    if (lat >= 20.70 && lat <= 20.80 && lng >= -156.30 && lng <= -156.15) return true
+    
+    // Big Island - Kona side
+    if (lat >= 19.50 && lat <= 20.25 && lng >= -156.10 && lng <= -155.45) return true
+    
+    // Big Island - Hilo side  
+    if (lat >= 19.65 && lat <= 20.15 && lng >= -155.45 && lng <= -154.80) return true
+    
+    // Oahu - more restrictive
+    if (lat >= 21.25 && lat <= 21.70 && lng >= -158.30 && lng <= -157.65) return true
+    
+    // Kauai
+    if (lat >= 21.85 && lat <= 22.25 && lng >= -159.80 && lng <= -159.30) return true
+    
+    // Molokai
+    if (lat >= 21.10 && lat <= 21.20 && lng >= -157.30 && lng <= -156.75) return true
+    
+    return false
+  }
+  
+  // Create a smaller, more focused grid around the analysis point
+  for (let i = -4; i <= 4; i++) {
+    for (let j = -4; j <= 4; j++) {
       const zoneLat = latitude + (i * gridSize)
       const zoneLng = longitude + (j * gridSize)
       
-      // Skip water zones (rough approximation)
-      if (zoneLat < 20.65 || zoneLat > 21.05) continue
-      if (zoneLng < -156.8 || zoneLng > -156.3) continue
+      // Only create zones on land
+      if (!isOnLand(zoneLat, zoneLng)) continue
       
       // Determine zone risk based on distance from center and analysis data
       const distance = Math.sqrt(i*i + j*j)
       let zoneRisk = 'LOW'
       
       if (analysis.risk_assessment) {
-        if (distance < 1.5 && analysis.risk_assessment.severity === 'HIGH') {
-          zoneRisk = Math.random() > 0.5 ? 'HIGH' : 'MEDIUM'
-        } else if (distance < 2.5 && analysis.risk_assessment.risk_level > 0.4) {
-          zoneRisk = Math.random() > 0.7 ? 'MEDIUM' : 'LOW'
+        if (distance < 2 && analysis.risk_assessment.severity === 'HIGH') {
+          zoneRisk = Math.random() > 0.4 ? 'HIGH' : 'MEDIUM'
+        } else if (distance < 3 && analysis.risk_assessment.risk_level > 0.4) {
+          zoneRisk = Math.random() > 0.6 ? 'MEDIUM' : 'LOW'
         }
       }
       
-      // Add some high-risk zones for demo
+      // Ensure center zone matches analysis severity
       if (i === 0 && j === 0) zoneRisk = analysis.risk_assessment?.severity || 'HIGH'
-      if ((i === -1 && j === 0) || (i === 1 && j === -1)) zoneRisk = 'MEDIUM'
+      
+      // Add some realistic high-risk zones near center
+      if (Math.abs(i) + Math.abs(j) <= 2 && Math.random() > 0.7) {
+        zoneRisk = analysis.risk_assessment?.severity === 'HIGH' ? 'HIGH' : 'MEDIUM'
+      }
       
       zones.push({
-        id: `zone_${zones.length}`,
+        id: `zone_${String(zones.length).padStart(4, '0')}`,
         latitude: zoneLat,
         longitude: zoneLng,
         risk: zoneRisk,
         dryness: 85 + Math.random() * 10,
-        powerLines: Math.random() > 0.7 ? Math.floor(Math.random() * 3) + 1 : 0,
-        powerDistance: Math.random() > 0.7 ? Math.floor(Math.random() * 500) : null
+        powerLines: Math.random() > 0.8 ? Math.floor(Math.random() * 3) + 1 : 0,
+        powerDistance: Math.random() > 0.8 ? Math.floor(Math.random() * 500) : null
       })
     }
   }
   
-  return zones
+  // Limit to reasonable number of zones to avoid clutter
+  return zones.slice(0, 12)
 }
 
 export default function MapComponent({ 

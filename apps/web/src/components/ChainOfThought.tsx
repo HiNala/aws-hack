@@ -348,7 +348,7 @@ export default function ChainOfThought({
   }, [isAnalyzing, analysisId, reasoningEntries.length, autoCollapse])
 
   return (
-    <Card className={`overlay-chain-of-thought w-full max-w-lg bg-slate-800/95 backdrop-blur-md border-slate-600/50 text-white shadow-xl ${className}`}>
+    <Card className={`overlay-chain-of-thought w-full max-w-xl bg-slate-800/95 backdrop-blur-md border-slate-600/50 text-white shadow-xl ${className}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -405,7 +405,8 @@ export default function ChainOfThought({
             <CardContent className="pt-0">
               <div 
                 ref={scrollRef}
-                className="space-y-2 max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600"
+                className="space-y-2 max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600"
+                style={{ minHeight: '300px' }}
               >
                 {reasoningEntries.map((entry, index) => (
                   <motion.div
@@ -416,7 +417,7 @@ export default function ChainOfThought({
                     className={`p-3 rounded-lg border transition-all duration-300 ${getTypeColor(entry.type)}`}
                   >
                     <div className="flex items-start gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-wrap">
                         {getTypeIcon(entry.type)}
                         <span className="font-mono text-xs text-slate-400">
                           {formatTimestamp(entry.timestamp)}
@@ -427,7 +428,7 @@ export default function ChainOfThought({
                       </div>
                     </div>
                     
-                    <div className="mt-2 text-sm leading-relaxed">
+                    <div className="mt-2 text-sm leading-relaxed break-words">
                       {entry.content}
                     </div>
                   </motion.div>
