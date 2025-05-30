@@ -239,10 +239,10 @@ export default function MapComponent({
   // Loading state
   if (!mounted || !mapKey || !containerIdRef.current) {
     return (
-      <div className="w-full h-full bg-dark-900 flex items-center justify-center">
+      <div className="w-full h-full bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading map...</p>
+          <p className="text-slate-400">Loading map...</p>
         </div>
       </div>
     )
@@ -251,7 +251,7 @@ export default function MapComponent({
   // Error state
   if (mapError) {
     return (
-      <div className="w-full h-full bg-dark-900 flex items-center justify-center">
+      <div className="w-full h-full bg-slate-900 flex items-center justify-center">
         <div className="text-center p-6">
           <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <p className="text-red-400 mb-4">Map Error: {mapError}</p>
@@ -507,42 +507,8 @@ export default function MapComponent({
         </MapContainer>
       </div>
 
-      {/* Map Instructions Overlay */}
-      {!currentAnalysis && !isAnalyzing && (
-        <div className="absolute top-4 left-4 z-[1000] bg-dark-900/90 backdrop-blur-md border border-gray-700 rounded-lg p-4 max-w-xs">
-          <div className="flex items-center space-x-2 mb-2">
-            <MapPin className="w-4 h-4 text-blue-400" />
-            <span className="text-sm font-semibold text-white">Map Instructions</span>
-          </div>
-          <p className="text-xs text-gray-400 leading-relaxed mb-2">
-            Click anywhere on the Hawaiian Islands to start real-time wildfire risk analysis.
-            {demoMode && ' Demo locations are marked with pins for quick testing.'}
-          </p>
-          <div className="bg-orange-500/20 border border-orange-500/40 rounded p-2">
-            <div className="flex items-center space-x-1 mb-1">
-              <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
-              <span className="text-xs font-semibold text-orange-300">West Maui Priority Zone</span>
-            </div>
-            <p className="text-xs text-orange-200">
-              🔥 High-risk area marked with orange marker. Click for priority analysis.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Analysis Loading Overlay */}
-      {isAnalyzing && !currentAnalysis && (
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm z-[900] flex items-center justify-center">
-          <div className="bg-dark-900/95 border border-gray-700 rounded-lg p-6 text-center">
-            <div className="animate-spin w-6 h-6 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-3"></div>
-            <p className="text-white font-medium">Initializing Analysis...</p>
-            <p className="text-gray-400 text-sm mt-1">Preparing wildfire risk assessment</p>
-          </div>
-        </div>
-      )}
-
       {/* Map Legend */}
-      <div className="absolute bottom-4 right-4 z-[1000] bg-dark-900/90 backdrop-blur-md border border-gray-700 rounded-lg p-3">
+      <div className="absolute bottom-4 right-4 z-[700] bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-lg p-3 shadow-xl">
         <div className="text-xs font-semibold text-white mb-2">Risk Levels</div>
         <div className="space-y-1">
           {[
@@ -556,7 +522,7 @@ export default function MapComponent({
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: color }}
               ></div>
-              <span className="text-xs text-gray-300">{level}</span>
+              <span className="text-xs text-slate-300">{level}</span>
             </div>
           ))}
         </div>

@@ -26,6 +26,8 @@ interface ChainOfThoughtProps {
   analysisId: string
   coordinates: { latitude: number; longitude: number }
   realTime?: boolean
+  isAnalyzing?: boolean
+  autoCollapse?: boolean
   className?: string
 }
 
@@ -105,13 +107,16 @@ export default function ChainOfThought({
   analysisId, 
   coordinates, 
   realTime = true, 
+  isAnalyzing = false,
+  autoCollapse = false,
   className = "" 
 }: ChainOfThoughtProps) {
   const [reasoningSteps, setReasoningSteps] = useState<ReasoningStep[]>([])
   const [isActive, setIsActive] = useState(realTime)
   const [currentPhase, setCurrentPhase] = useState(0)
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
   const [autoScroll, setAutoScroll] = useState(true)
+  const [autoCollapseTimer, setAutoCollapseTimer] = useState<NodeJS.Timeout | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const simulatePhaseReasoning = async (phaseId: string) => {
@@ -295,6 +300,46 @@ export default function ChainOfThought({
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [reasoningSteps, autoScroll])
+
+  // Auto-collapse logic
+  useEffect(() => {
+    if (autoCollapse) {
+      if (isAnalyzing && analysisId) {
+        // Auto-expand when analysis starts
+        setIsExpanded(true)
+        // Clear any existing timer
+        if (autoCollapseTimer) {
+          clearTimeout(autoCollapseTimer)
+          setAutoCollapseTimer(null)
+        }
+      } else if (!isAnalyzing && analysisId && reasoningSteps.length > 0) {
+        // Auto-collapse 3 seconds after analysis completes
+        const timer = setTimeout(() => {
+          setIsExpanded(false)
+          setAutoCollapseTimer(null)
+        }, 3000)
+        setAutoCollapseTimer(timer)
+      }
+    }
+
+    return () => {
+      if (autoCollapseTimer) {
+        clearTimeout(autoCollapseTimer)
+      }
+    }
+  }, [isAnalyzing, analysisId, reasoningSteps.length, autoCollapse, autoCollapseTimer])
+
+  // Auto-scroll to latest reasoning step
+  useEffect(() => {
+    if (autoScroll && scrollRef.current && reasoningSteps.length > 0) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+        }
+      }, 100)
     }
   }, [reasoningSteps, autoScroll])
 
