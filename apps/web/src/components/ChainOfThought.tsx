@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Badge } from './ui/badge'
-import { Button } from './ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { 
   Brain, 
   Satellite, 
@@ -112,25 +112,28 @@ export default function ChainOfThought({
   className = "" 
 }: ChainOfThoughtProps) {
   const [reasoningSteps, setReasoningSteps] = useState<ReasoningStep[]>([])
-  const [isActive, setIsActive] = useState(realTime)
+  const [isActive, setIsActive] = useState(false)
   const [currentPhase, setCurrentPhase] = useState(0)
   const [isExpanded, setIsExpanded] = useState(false)
   const [autoScroll, setAutoScroll] = useState(true)
-  const [autoCollapseTimer, setAutoCollapseTimer] = useState<NodeJS.Timeout | null>(null)
+  
+  // Use refs to avoid dependency issues
+  const autoCollapseTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const simulationActiveRef = useRef(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const simulatePhaseReasoning = async (phaseId: string) => {
     const reasoningData = getPhaseReasoningData(phaseId, coordinates)
     
     for (let step = 0; step < reasoningData.length; step++) {
-      if (!isActive) break
+      if (!simulationActiveRef.current) break
       
       updateReasoningStep(phaseId, {
         details: reasoningData.slice(0, step + 1),
         confidence: Math.min(0.95, 0.60 + (step / reasoningData.length) * 0.35)
       })
       
-      await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 400))
+      await new Promise(resolve => setTimeout(resolve, 1200 + Math.random() * 800)) // Slower, more realistic timing
     }
   }
 
@@ -151,7 +154,7 @@ export default function ChainOfThought({
   }
 
   const simulateAdvancedReasoning = async () => {
-    if (!isActive) return
+    if (!simulationActiveRef.current) return
 
     for (let i = 0; i < REASONING_PHASES.length; i++) {
       const phase = REASONING_PHASES[i]
@@ -163,21 +166,23 @@ export default function ChainOfThought({
         details: [`🔄 Initiating ${phase.description.toLowerCase()}...`]
       })
 
-      await new Promise(resolve => setTimeout(resolve, 800))
+      await new Promise(resolve => setTimeout(resolve, 1500))
 
       // Simulate detailed reasoning for each phase
       await simulatePhaseReasoning(phase.id)
 
-      // Complete phase
-      updateReasoningStep(phase.id, {
-        status: 'complete',
-        confidence: 0.85 + Math.random() * 0.12
-      })
+      // Only complete if we're not analyzing anymore (to prevent completion before actual analysis)
+      if (!isAnalyzing) {
+        updateReasoningStep(phase.id, {
+          status: 'complete',
+          confidence: 0.85 + Math.random() * 0.12
+        })
+      }
 
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await new Promise(resolve => setTimeout(resolve, 800))
 
-      // Start next phase
-      if (i < REASONING_PHASES.length - 1) {
+      // Start next phase if not analyzing and not at last phase
+      if (i < REASONING_PHASES.length - 1 && !isAnalyzing) {
         updateReasoningStep(REASONING_PHASES[i + 1].id, {
           status: 'processing'
         })
@@ -272,8 +277,11 @@ export default function ChainOfThought({
   }
 
   const handleToggleReasoning = () => {
-    setIsActive(!isActive)
-    if (!isActive) {
+    const newActiveState = !isActive
+    setIsActive(newActiveState)
+    simulationActiveRef.current = newActiveState
+    
+    if (newActiveState) {
       initializeReasoning()
       simulateAdvancedReasoning()
     }
@@ -281,60 +289,42 @@ export default function ChainOfThought({
 
   const handleRestart = () => {
     setIsActive(false)
+    simulationActiveRef.current = false
     setCurrentPhase(0)
     initializeReasoning()
     setTimeout(() => {
       setIsActive(true)
+      simulationActiveRef.current = true
       simulateAdvancedReasoning()
     }, 500)
   }
 
+  // Start reasoning when analysis begins
   useEffect(() => {
-    if (realTime && analysisId) {
+    if (isAnalyzing && analysisId && !isActive) {
+      setIsActive(true)
+      simulationActiveRef.current = true
       initializeReasoning()
-      simulateAdvancedReasoning()
+      // Don't start simulation immediately, let it sync with backend
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [realTime, analysisId])
+  }, [isAnalyzing, analysisId, isActive])
 
+  // Stop reasoning when analysis completes
   useEffect(() => {
-    if (autoScroll && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    if (!isAnalyzing && isActive) {
+      simulationActiveRef.current = false
+      // Complete any remaining steps
+      setReasoningSteps(prev => prev.map(step => ({
+        ...step,
+        status: step.status === 'processing' ? 'complete' : step.status,
+        confidence: step.confidence || 0.85 + Math.random() * 0.12
+      })))
     }
-  }, [reasoningSteps, autoScroll])
+  }, [isAnalyzing, isActive])
 
-  // Auto-collapse logic
-  useEffect(() => {
-    if (autoCollapse) {
-      if (isAnalyzing && analysisId) {
-        // Auto-expand when analysis starts
-        setIsExpanded(true)
-        // Clear any existing timer
-        if (autoCollapseTimer) {
-          clearTimeout(autoCollapseTimer)
-          setAutoCollapseTimer(null)
-        }
-      } else if (!isAnalyzing && analysisId && reasoningSteps.length > 0) {
-        // Auto-collapse 3 seconds after analysis completes
-        const timer = setTimeout(() => {
-          setIsExpanded(false)
-          setAutoCollapseTimer(null)
-        }, 3000)
-        setAutoCollapseTimer(timer)
-      }
-    }
-
-    return () => {
-      if (autoCollapseTimer) {
-        clearTimeout(autoCollapseTimer)
-      }
-    }
-  }, [isAnalyzing, analysisId, reasoningSteps.length, autoCollapse, autoCollapseTimer])
-
-  // Auto-scroll to latest reasoning step
+  // Auto-scroll logic
   useEffect(() => {
     if (autoScroll && scrollRef.current && reasoningSteps.length > 0) {
-      // Small delay to ensure DOM is updated
       setTimeout(() => {
         if (scrollRef.current) {
           scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -342,6 +332,35 @@ export default function ChainOfThought({
       }, 100)
     }
   }, [reasoningSteps, autoScroll])
+
+  // Auto-collapse logic - Fixed to avoid infinite loops
+  useEffect(() => {
+    if (!autoCollapse) return
+
+    // Clear any existing timer
+    if (autoCollapseTimerRef.current) {
+      clearTimeout(autoCollapseTimerRef.current)
+      autoCollapseTimerRef.current = null
+    }
+
+    if (isAnalyzing && analysisId) {
+      // Auto-expand when analysis starts
+      setIsExpanded(true)
+    } else if (!isAnalyzing && analysisId && reasoningSteps.length > 0) {
+      // Auto-collapse 3 seconds after analysis completes
+      autoCollapseTimerRef.current = setTimeout(() => {
+        setIsExpanded(false)
+        autoCollapseTimerRef.current = null
+      }, 3000)
+    }
+
+    return () => {
+      if (autoCollapseTimerRef.current) {
+        clearTimeout(autoCollapseTimerRef.current)
+        autoCollapseTimerRef.current = null
+      }
+    }
+  }, [isAnalyzing, analysisId, reasoningSteps.length, autoCollapse]) // Removed autoCollapseTimer from deps
 
   const getRiskColor = (confidence: number) => {
     if (confidence > 0.8) return 'text-red-500'
