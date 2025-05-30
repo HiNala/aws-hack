@@ -116,6 +116,7 @@ function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isDemoLocationsExpanded, setIsDemoLocationsExpanded] = useState(true)
+  const [isMapInstructionsExpanded, setIsMapInstructionsExpanded] = useState(false)
   const eventSourceRef = useRef<EventSource | null>(null)
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8082'
@@ -535,41 +536,58 @@ function AppContent() {
             demoLocations={demoLocations}
           />
 
-          {/* Map Instructions Overlay - Only show when no analysis and not analyzing */}
+          {/* Map Instructions Overlay - Collapsible and starts collapsed */}
           {!currentAnalysis && !isAnalyzing && (
-            <div className="absolute top-4 left-4 z-[800] max-w-xs">
+            <div className="absolute top-4 left-4 z-[500] max-w-xs">
               <Card className="bg-slate-800/95 backdrop-blur-md border-slate-600/50 shadow-xl">
                 <CardContent className="p-3">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Activity className="w-4 h-4 text-blue-400" />
-                    <h3 className="font-medium text-white">Map Instructions</h3>
-                  </div>
-                  <div className="space-y-2 text-xs text-slate-400">
-                    <p>Click anywhere on the Hawaiian Islands to start real-time wildfire risk analysis.</p>
-                    <div className="bg-orange-500/20 border border-orange-500/30 rounded p-2">
-                      <p className="text-orange-300 font-medium">🔥 West Maui Priority Zone</p>
-                      <p className="text-orange-200">High-risk area marked with orange marker. Click for priority analysis.</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Activity className="w-4 h-4 text-blue-400" />
+                      <h3 className="font-medium text-white">Map Instructions</h3>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsMapInstructionsExpanded(!isMapInstructionsExpanded)}
+                      className="h-6 w-6 p-0 text-slate-400 hover:text-white"
+                    >
+                      {isMapInstructionsExpanded ? 
+                        <ChevronDown className="w-4 h-4" /> : 
+                        <ChevronRight className="w-4 h-4" />
+                      }
+                    </Button>
                   </div>
+                  {isMapInstructionsExpanded && (
+                    <div className="space-y-2 text-xs text-slate-400">
+                      <p>Click anywhere on the Hawaiian Islands to start real-time wildfire risk analysis.</p>
+                      <div className="bg-orange-500/20 border border-orange-500/30 rounded p-2">
+                        <p className="text-orange-300 font-medium">🔥 West Maui Priority Zone</p>
+                        <p className="text-orange-200">High-risk area marked with orange marker. Click for priority analysis.</p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
           )}
 
-          {/* Chain of Thought Reasoning - Auto-collapsible */}
-          <div className="absolute top-4 right-4 z-[900] max-w-sm">
-            <ChainOfThought 
-              analysisId={currentAnalysis?.analysis_id || ''}
-              coordinates={currentAnalysis?.coordinates || { latitude: 0, longitude: 0 }}
-              realTime={!!currentAnalysis}
-              isAnalyzing={isAnalyzing}
-              autoCollapse={true}
-            />
-          </div>
+          {/* Chain of Thought Reasoning - Auto-collapsible and properly positioned */}
+          {(isAnalyzing || currentAnalysis) && (
+            <div className="absolute bottom-4 right-4 z-[500] max-w-md">
+              <ChainOfThought 
+                analysisId={currentAnalysis?.analysis_id || ''}
+                coordinates={currentAnalysis?.coordinates || { latitude: 0, longitude: 0 }}
+                realTime={!!currentAnalysis}
+                isAnalyzing={isAnalyzing}
+                autoCollapse={true}
+              />
+            </div>
+          )}
 
           {/* Analysis Loading Overlay - Full Screen with High Z-Index */}
           {isAnalyzing && !currentAnalysis && (
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[1000] flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[600] flex items-center justify-center">
               <Card className="bg-slate-800/95 backdrop-blur-md border-slate-600/50 shadow-2xl">
                 <CardContent className="p-8 text-center">
                   <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
