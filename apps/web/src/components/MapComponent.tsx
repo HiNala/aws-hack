@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
-import { MapPin, Activity, AlertTriangle, TrendingUp } from 'lucide-react'
+import { MapPin, Activity, AlertTriangle } from 'lucide-react'
 
 // Fix for default markers in Leaflet with Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl

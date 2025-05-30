@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useRef, Suspense } from 'react'
+import React, { useEffect, useState, useRef, Suspense, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,11 +15,8 @@ import {
   Wind, 
   Droplets,
   Zap,
-  TrendingUp,
-  PlayCircle,
   StopCircle,
   CheckCircle2,
-  Clock,
   Satellite,
   CloudSun
 } from 'lucide-react'
@@ -143,15 +140,7 @@ function AppContent() {
     }
   }, [searchParams, isAuthenticated])
 
-  // Test API connection on mount
-  useEffect(() => {
-    if (!isAuthenticated) return
-    
-    checkConnection()
-    loadDemoLocations()
-  }, [isAuthenticated])
-
-  const checkConnection = async () => {
+  const checkConnection = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/`)
       if (response.ok) {
@@ -163,9 +152,9 @@ function AppContent() {
       console.error('Connection test failed:', error)
       setConnectionStatus('error')
     }
-  }
+  }, [API_URL])
 
-  const loadDemoLocations = async () => {
+  const loadDemoLocations = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/api/v1/demo-locations`)
       if (response.ok) {
@@ -175,12 +164,20 @@ function AppContent() {
     } catch (error) {
       console.error('Failed to load demo locations:', error)
     }
-  }
+  }, [API_URL])
 
-  const showNotification = (message: string, type: 'success' | 'error' | 'info') => {
+  const showNotification = useCallback((message: string, type: 'success' | 'error' | 'info') => {
     setNotification({ message, type })
     setTimeout(() => setNotification(null), 5000)
-  }
+  }, [])
+
+  // Test API connection on mount
+  useEffect(() => {
+    if (!isAuthenticated) return
+    
+    checkConnection()
+    loadDemoLocations()
+  }, [isAuthenticated, checkConnection, loadDemoLocations])
 
   const handleLogout = () => {
     localStorage.removeItem('pyroguard_auth')

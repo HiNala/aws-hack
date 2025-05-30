@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Clock, Satellite, CloudRain, Zap, Brain, Ticket, CheckCircle, AlertTriangle, MapPin, TrendingUp, Eye, Cpu, Activity, Download, Image } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 interface AnalysisData {
   analysis_id: string

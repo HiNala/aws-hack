@@ -1,6 +1,6 @@
-import * as React from "react";
+import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { 
   Satellite, 
   Brain, 
@@ -77,7 +77,7 @@ function PyroGuardFeatures() {
         <div className="text-center">
           <h2 className="text-balance text-4xl font-semibold lg:text-5xl">PyroGuard Sentinel</h2>
           <p className="mt-4 text-muted-foreground max-w-3xl mx-auto">
-            Advanced wildfire detection and prevention system that combines cutting-edge technology with comprehensive risk management for Hawaii's unique environment.
+            Advanced wildfire detection and prevention system that combines cutting-edge technology with comprehensive risk management for Hawaii&apos;s unique environment.
           </p>
         </div>
         <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">

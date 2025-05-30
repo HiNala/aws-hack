@@ -57,7 +57,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <PyroGuardHero
         title="Detect Wildfires Before They Spread"
-        subtitle="PyroGuard Sentinel uses advanced AI to identify wildfire risks, provide early warnings, and help emergency services respond faster. Protect Hawaii's communities with cutting-edge technology."
+        subtitle="PyroGuard Sentinel uses advanced AI to identify wildfire risks, provide early warnings, and help emergency services respond faster. Protect Hawaii&apos;s communities with cutting-edge technology."
         onLoginClick={handleLogin}
         onDemoClick={handleDemo}
         actions={[
@@ -83,7 +83,7 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-balance text-4xl font-semibold tracking-tight lg:text-5xl mb-6">Wildfire Solutions for Hawaii</h2>
             <p className="mt-4 text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Tailored for Hawaii's unique environment, terrain, and emergency response needs.
+              Tailored for Hawaii&apos;s unique environment, terrain, and emergency response needs.
             </p>
           </div>
           
@@ -137,7 +137,7 @@ export default function LandingPage() {
             <h2 className="text-balance text-4xl font-semibold tracking-tight lg:text-5xl mb-8">About PyroGuard Sentinel</h2>
             <div className="mt-8 space-y-8 text-lg text-muted-foreground leading-relaxed">
               <p>
-                PyroGuard Sentinel was developed in response to Hawaii's increasing wildfire risks, 
+                PyroGuard Sentinel was developed in response to Hawaii&apos;s increasing wildfire risks, 
                 combining cutting-edge AI technology with comprehensive environmental monitoring.
               </p>
               <p>
@@ -203,7 +203,7 @@ export default function LandingPage() {
               <span className="text-xl font-bold">PyroGuard Sentinel</span>
             </div>
             <div className="text-sm text-muted-foreground">
-              © 2025 PyroGuard Sentinel. Protecting Hawaii's communities with AI.
+              © 2025 PyroGuard Sentinel. Protecting Hawaii&apos;s communities with AI.
             </div>
           </div>
         </div>

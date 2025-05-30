@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
@@ -19,10 +19,6 @@ import {
   ChevronDown,
   ChevronRight,
   Activity,
-  Flame,
-  Wind,
-  Thermometer,
-  Droplets,
   MapPin
 } from 'lucide-react'
 
@@ -41,7 +37,7 @@ interface ReasoningStep {
   confidence: number
   details: string[]
   sponsorTool?: string
-  data?: any
+  data?: Record<string, unknown>
   processing_time?: number
   timestamp: Date
   reasoning?: string
@@ -118,6 +114,21 @@ export default function ChainOfThought({
   const [autoScroll, setAutoScroll] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  const simulatePhaseReasoning = async (phaseId: string) => {
+    const reasoningData = getPhaseReasoningData(phaseId, coordinates)
+    
+    for (let step = 0; step < reasoningData.length; step++) {
+      if (!isActive) break
+      
+      updateReasoningStep(phaseId, {
+        details: reasoningData.slice(0, step + 1),
+        confidence: Math.min(0.95, 0.60 + (step / reasoningData.length) * 0.35)
+      })
+      
+      await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 400))
+    }
+  }
+
   const initializeReasoning = () => {
     const initialSteps: ReasoningStep[] = REASONING_PHASES.map((phase, index) => ({
       id: phase.id,
@@ -132,24 +143,6 @@ export default function ChainOfThought({
     
     setReasoningSteps(initialSteps)
     setCurrentPhase(0)
-  }
-
-  const getSponsorTool = (phaseId: string): string => {
-    const toolMap: Record<string, string> = {
-      'location_verification': 'Internal validation',
-      'satellite_analysis': 'Clarifai NDVI + Anthropic Vision API',
-      'weather_synthesis': 'NOAA Weather Service',
-      'infrastructure_assessment': 'OpenStreetMap Overpass API',
-      'risk_reasoning': 'Internal MCP Agent',
-      'incident_automation': 'Make.com → Jira'
-    }
-    return toolMap[phaseId] || 'Unknown Tool'
-  }
-
-  const updateReasoningStep = (phaseId: string, updates: Partial<ReasoningStep>) => {
-    setReasoningSteps(prev => prev.map(step => 
-      step.id === phaseId ? { ...step, ...updates, timestamp: new Date() } : step
-    ))
   }
 
   const simulateAdvancedReasoning = async () => {
@@ -168,7 +161,7 @@ export default function ChainOfThought({
       await new Promise(resolve => setTimeout(resolve, 800))
 
       // Simulate detailed reasoning for each phase
-      await simulatePhaseReasoning(phase.id, i)
+      await simulatePhaseReasoning(phase.id)
 
       // Complete phase
       updateReasoningStep(phase.id, {
@@ -187,19 +180,22 @@ export default function ChainOfThought({
     }
   }
 
-  const simulatePhaseReasoning = async (phaseId: string, phaseIndex: number) => {
-    const reasoningData = getPhaseReasoningData(phaseId, coordinates)
-    
-    for (let step = 0; step < reasoningData.length; step++) {
-      if (!isActive) break
-      
-      updateReasoningStep(phaseId, {
-        details: reasoningData.slice(0, step + 1),
-        confidence: Math.min(0.95, 0.60 + (step / reasoningData.length) * 0.35)
-      })
-      
-      await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 400))
+  const getSponsorTool = (phaseId: string): string => {
+    const toolMap: Record<string, string> = {
+      'location_verification': 'Internal validation',
+      'satellite_analysis': 'Clarifai NDVI + Anthropic Vision API',
+      'weather_synthesis': 'NOAA Weather Service',
+      'infrastructure_assessment': 'OpenStreetMap Overpass API',
+      'risk_reasoning': 'Internal MCP Agent',
+      'incident_automation': 'Make.com → Jira'
     }
+    return toolMap[phaseId] || 'Unknown Tool'
+  }
+
+  const updateReasoningStep = (phaseId: string, updates: Partial<ReasoningStep>) => {
+    setReasoningSteps(prev => prev.map(step => 
+      step.id === phaseId ? { ...step, ...updates, timestamp: new Date() } : step
+    ))
   }
 
   const getPhaseReasoningData = (phaseId: string, coords: { latitude: number; longitude: number }): string[] => {
@@ -293,6 +289,7 @@ export default function ChainOfThought({
       initializeReasoning()
       simulateAdvancedReasoning()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [realTime, analysisId])
 
   useEffect(() => {
