@@ -92,11 +92,11 @@ export default function ChainOfThought({
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'thought': return 'text-blue-400 bg-blue-950/30 border-blue-500/30'
-      case 'action': return 'text-green-400 bg-green-950/30 border-green-500/30'
-      case 'observation': return 'text-yellow-400 bg-yellow-950/30 border-yellow-500/30'
-      case 'decision': return 'text-red-400 bg-red-950/30 border-red-500/30'
-      default: return 'text-slate-400 bg-slate-950/30 border-slate-500/30'
+      case 'thought': return 'text-blue-400 bg-blue-950/30 border-blue-500/40 shadow-blue-500/10'
+      case 'action': return 'text-green-400 bg-green-950/30 border-green-500/40 shadow-green-500/10'
+      case 'observation': return 'text-yellow-400 bg-yellow-950/30 border-yellow-500/40 shadow-yellow-500/10'
+      case 'decision': return 'text-red-400 bg-red-950/30 border-red-500/40 shadow-red-500/10'
+      default: return 'text-slate-400 bg-slate-950/30 border-slate-500/30 shadow-slate-500/10'
     }
   }
 
@@ -414,21 +414,21 @@ export default function ChainOfThought({
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className={`p-3 rounded-lg border transition-all duration-300 ${getTypeColor(entry.type)}`}
+                    className={`p-3 rounded-lg border transition-all duration-300 shadow-lg hover:shadow-xl ${getTypeColor(entry.type)}`}
                   >
                     <div className="flex items-start gap-2">
                       <div className="flex items-center gap-2 min-w-0 flex-wrap">
                         {getTypeIcon(entry.type)}
-                        <span className="font-mono text-xs text-slate-400">
+                        <span className="font-mono text-xs text-slate-400 bg-slate-800/50 px-2 py-0.5 rounded">
                           {formatTimestamp(entry.timestamp)}
                         </span>
-                        <Badge variant="outline" className="text-xs border-current">
+                        <Badge variant="outline" className="text-xs border-current bg-current/10 font-semibold">
                           {entry.type}
                         </Badge>
                       </div>
                     </div>
                     
-                    <div className="mt-2 text-sm leading-relaxed break-words">
+                    <div className="mt-3 text-sm leading-relaxed break-words font-medium">
                       {entry.content}
                     </div>
                   </motion.div>

@@ -127,35 +127,37 @@ const createFireWatchIcon = (severity: string) => {
   return new L.DivIcon({
     html: `
       <div style="
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
         background: ${color};
-        border: 2px solid white;
-        border-radius: 3px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        border: 3px solid white;
+        border-radius: 4px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.1);
         display: flex;
         align-items: center;
         justify-content: center;
         animation: pulse 2s infinite;
+        position: relative;
       ">
         <div style="
-          width: 8px;
-          height: 8px;
+          width: 10px;
+          height: 10px;
           background: white;
           border-radius: 50%;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.2);
         "></div>
       </div>
       <style>
         @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
+          0%, 100% { transform: scale(1); box-shadow: 0 3px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.1); }
+          50% { transform: scale(1.15); box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 0 2px ${color}40; }
         }
       </style>
     `,
     className: 'fire-watch-icon',
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -12],
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+    popupAnchor: [0, -13],
   })
 }
 
@@ -166,23 +168,26 @@ const createPowerLineIcon = () => {
   return new L.DivIcon({
     html: `
       <div style="
-        width: 20px;
-        height: 20px;
-        background: #fbbf24;
+        width: 22px;
+        height: 22px;
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
         border: 2px solid white;
         border-radius: 50%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.1);
         display: flex;
         align-items: center;
         justify-content: center;
-      ">
+        font-size: 11px;
+        transition: all 0.2s ease;
+        position: relative;
+      " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
         ⚡
       </div>
     `,
     className: 'power-line-icon',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    popupAnchor: [0, -10],
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -11],
   })
 }
 
@@ -216,31 +221,44 @@ function generateFireWatchZones(analysis: AnalysisData) {
   
   // Better land detection for Hawaiian Islands
   const isOnLand = (lat: number, lng: number) => {
-    // West Maui (Lahaina area) - more precise boundaries
-    if (lat >= 20.85 && lat <= 20.95 && lng >= -156.75 && lng <= -156.60) return true
+    // West Maui (Lahaina area) - very precise boundaries with safety margins
+    if (lat >= 20.86 && lat <= 20.94 && lng >= -156.74 && lng <= -156.61) return true
     
-    // Central/South Maui
-    if (lat >= 20.65 && lat <= 20.85 && lng >= -156.70 && lng <= -156.30) return true
+    // Central/South Maui - conservative boundaries
+    if (lat >= 20.67 && lat <= 20.84 && lng >= -156.69 && lng <= -156.32) return true
     
-    // East Maui (Haleakala area)
-    if (lat >= 20.70 && lat <= 20.80 && lng >= -156.30 && lng <= -156.15) return true
+    // East Maui (Haleakala area) - smaller, safer area
+    if (lat >= 20.71 && lat <= 20.79 && lng >= -156.28 && lng <= -156.17) return true
     
-    // Big Island - Kona side
-    if (lat >= 19.50 && lat <= 20.25 && lng >= -156.10 && lng <= -155.45) return true
+    // Big Island - Kona side with margins
+    if (lat >= 19.52 && lat <= 20.23 && lng >= -156.08 && lng <= -155.47) return true
     
-    // Big Island - Hilo side  
-    if (lat >= 19.65 && lat <= 20.15 && lng >= -155.45 && lng <= -154.80) return true
+    // Big Island - Hilo side with margins
+    if (lat >= 19.67 && lat <= 20.13 && lng >= -155.43 && lng <= -154.82) return true
     
-    // Oahu - more restrictive
-    if (lat >= 21.25 && lat <= 21.70 && lng >= -158.30 && lng <= -157.65) return true
+    // Oahu - very conservative to avoid water
+    if (lat >= 21.27 && lat <= 21.68 && lng >= -158.28 && lng <= -157.67) return true
     
-    // Kauai
-    if (lat >= 21.85 && lat <= 22.25 && lng >= -159.80 && lng <= -159.30) return true
+    // Kauai - conservative boundaries
+    if (lat >= 21.87 && lat <= 22.23 && lng >= -159.78 && lng <= -159.32) return true
     
-    // Molokai
-    if (lat >= 21.10 && lat <= 21.20 && lng >= -157.30 && lng <= -156.75) return true
+    // Molokai - tighter boundaries
+    if (lat >= 21.12 && lat <= 21.18 && lng >= -157.28 && lng <= -156.77) return true
     
-    return false
+    // Additional safety check - exclude obvious water coordinates
+    // Exclude areas too far from any major island
+    const distanceToNearestIsland = Math.min(
+      Math.sqrt(Math.pow(lat - 20.8783, 2) + Math.pow(lng + 156.6825, 2)), // West Maui
+      Math.sqrt(Math.pow(lat - 20.7967, 2) + Math.pow(lng + 156.3319, 2)), // East Maui
+      Math.sqrt(Math.pow(lat - 19.8968, 2) + Math.pow(lng + 155.5828, 2)), // Big Island
+      Math.sqrt(Math.pow(lat - 21.4389, 2) + Math.pow(lng + 158.0001, 2)), // Oahu
+      Math.sqrt(Math.pow(lat - 22.0964, 2) + Math.pow(lng + 159.5261, 2))  // Kauai
+    )
+    
+    // Reject if too far from any island (>0.3 degrees ~ 33km)
+    if (distanceToNearestIsland > 0.3) return false
+    
+    return false // Default to false for safety
   }
   
   // Create a smaller, more focused grid around the analysis point
@@ -670,33 +688,53 @@ export default function MapComponent({
       </MapContainer>
 
       {/* Map Legend */}
-      <div className="absolute bottom-4 right-4 z-[400] bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-lg p-3 shadow-xl">
-        <div className="text-xs font-semibold text-white mb-2">Fire Watch Legend</div>
-        <div className="space-y-2">
-          <div className="space-y-1">
+      <div className="absolute bottom-4 right-4 z-[400] bg-slate-800/95 backdrop-blur-md border border-slate-600/50 rounded-xl p-4 shadow-2xl min-w-[180px]">
+        <div className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+          <Eye className="w-4 h-4 text-blue-400" />
+          Fire Watch Legend
+        </div>
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Risk Levels</div>
             {[
-              { level: 'LOW', color: '#10b981' },
-              { level: 'MEDIUM', color: '#f59e0b' },
-              { level: 'HIGH', color: '#f97316' },
-              { level: 'EXTREME', color: '#ef4444' }
-            ].map(({ level, color }) => (
-              <div key={level} className="flex items-center space-x-2">
+              { level: 'LOW', color: '#10b981', show: false },
+              { level: 'MEDIUM', color: '#f59e0b', show: true },
+              { level: 'HIGH', color: '#f97316', show: true },
+              { level: 'EXTREME', color: '#ef4444', show: true }
+            ].filter(item => item.show).map(({ level, color }) => (
+              <div key={level} className="flex items-center space-x-3">
                 <div 
-                  className="w-3 h-3 rounded"
+                  className="w-4 h-4 rounded border-2 border-white shadow-sm"
                   style={{ backgroundColor: color }}
                 />
-                <span className="text-xs text-slate-300">{level} Risk</span>
+                <span className="text-xs text-slate-200 font-medium">{level} Risk</span>
               </div>
             ))}
           </div>
-          <div className="border-t border-slate-600 pt-2">
-            <div className="flex items-center space-x-2 mb-1">
-              <div className="w-3 h-3 rounded-full bg-yellow-400" />
-              <span className="text-xs text-slate-300">Power Lines</span>
+          
+          <div className="border-t border-slate-600/50 pt-3 space-y-2">
+            <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Infrastructure</div>
+            <div className="flex items-center space-x-3">
+              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 border-2 border-white shadow-sm flex items-center justify-center text-[8px]">
+                ⚡
+              </div>
+              <span className="text-xs text-slate-200 font-medium">Power Lines</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 border-2 border-blue-400 border-dashed bg-transparent" />
-              <span className="text-xs text-slate-300">Analysis Grid</span>
+            <div className="flex items-center space-x-3">
+              <div className="w-4 h-4 border-2 border-blue-400 border-dashed bg-blue-400/20 rounded-sm" />
+              <span className="text-xs text-slate-200 font-medium">Analysis Grid</span>
+            </div>
+          </div>
+          
+          <div className="border-t border-slate-600/50 pt-3">
+            <div className="text-xs text-slate-400 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <span>🌺</span>
+                <span className="font-medium">PyroGuard Sentinel</span>
+              </div>
+              <div className="text-[10px] opacity-75">
+                Real-time Fire Risk Assessment
+              </div>
             </div>
           </div>
         </div>
