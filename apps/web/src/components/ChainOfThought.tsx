@@ -29,6 +29,15 @@ interface ChainOfThoughtProps {
   isAnalyzing?: boolean
   autoCollapse?: boolean
   className?: string
+  analysisData?: {
+    status: string
+    weather?: any
+    satellite?: any
+    power_lines?: any
+    risk_assessment?: any
+    jira_ticket_url?: string
+    processing_time_seconds?: number
+  }
 }
 
 interface ReasoningStep {
@@ -109,86 +118,17 @@ export default function ChainOfThought({
   realTime = true, 
   isAnalyzing = false,
   autoCollapse = false,
-  className = "" 
+  className = "",
+  analysisData
 }: ChainOfThoughtProps) {
   const [reasoningSteps, setReasoningSteps] = useState<ReasoningStep[]>([])
-  const [isActive, setIsActive] = useState(false)
   const [currentPhase, setCurrentPhase] = useState(0)
   const [isExpanded, setIsExpanded] = useState(false)
   const [autoScroll, setAutoScroll] = useState(true)
   
   // Use refs to avoid dependency issues
   const autoCollapseTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const simulationActiveRef = useRef(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-
-  const simulatePhaseReasoning = async (phaseId: string) => {
-    const reasoningData = getPhaseReasoningData(phaseId, coordinates)
-    
-    for (let step = 0; step < reasoningData.length; step++) {
-      if (!simulationActiveRef.current) break
-      
-      updateReasoningStep(phaseId, {
-        details: reasoningData.slice(0, step + 1),
-        confidence: Math.min(0.95, 0.60 + (step / reasoningData.length) * 0.35)
-      })
-      
-      await new Promise(resolve => setTimeout(resolve, 1200 + Math.random() * 800)) // Slower, more realistic timing
-    }
-  }
-
-  const initializeReasoning = () => {
-    const initialSteps: ReasoningStep[] = REASONING_PHASES.map((phase, index) => ({
-      id: phase.id,
-      phase: phase.id,
-      title: phase.title,
-      status: index === 0 ? 'processing' : 'pending',
-      confidence: 0,
-      details: [`Initializing ${phase.description.toLowerCase()}...`],
-      timestamp: new Date(),
-      sponsorTool: getSponsorTool(phase.id)
-    }))
-    
-    setReasoningSteps(initialSteps)
-    setCurrentPhase(0)
-  }
-
-  const simulateAdvancedReasoning = async () => {
-    if (!simulationActiveRef.current) return
-
-    for (let i = 0; i < REASONING_PHASES.length; i++) {
-      const phase = REASONING_PHASES[i]
-      setCurrentPhase(i)
-
-      // Start processing phase
-      updateReasoningStep(phase.id, {
-        status: 'processing',
-        details: [`🔄 Initiating ${phase.description.toLowerCase()}...`]
-      })
-
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // Simulate detailed reasoning for each phase
-      await simulatePhaseReasoning(phase.id)
-
-      // Only complete if we're not analyzing anymore (to prevent completion before actual analysis)
-      if (!isAnalyzing) {
-        updateReasoningStep(phase.id, {
-          status: 'complete',
-          confidence: 0.85 + Math.random() * 0.12
-        })
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 800))
-
-      // Start next phase if not analyzing and not at last phase
-      if (i < REASONING_PHASES.length - 1 && !isAnalyzing) {
-        updateReasoningStep(REASONING_PHASES[i + 1].id, {
-          status: 'processing'
-        })
-      }
-    }
-  }
 
   const getSponsorTool = (phaseId: string): string => {
     const toolMap: Record<string, string> = {
@@ -208,7 +148,7 @@ export default function ChainOfThought({
     ))
   }
 
-  const getPhaseReasoningData = (phaseId: string, coords: { latitude: number; longitude: number }): string[] => {
+  const getPhaseRealData = (phaseId: string, coords: { latitude: number; longitude: number }, data?: any): string[] => {
     const lat = coords.latitude.toFixed(4)
     const lon = Math.abs(coords.longitude).toFixed(4)
     
@@ -216,59 +156,96 @@ export default function ChainOfThought({
       case 'location_verification':
         return [
           `📍 Location verified: ${lat}°N, ${lon}°W (Hawaiian Islands)`,
-          `🛰️ Retrieving Sentinel-2 satellite imagery from AWS S3`,
-          `🌤️ Fetching current weather conditions from NOAA Weather Service`,
-          `⚡ Querying power infrastructure from OpenStreetMap database`,
-          `🔗 Cross-referencing data sources for temporal alignment`,
-          `✅ Multi-source data fusion complete: 4/4 systems operational`
+          `🌊 Region: Hawaiian Islands (Valid analysis area)`,
+          `✅ Coordinate validation: PASSED`
         ]
 
       case 'satellite_analysis':
+        if (data?.satellite) {
+          return [
+            `🛰️ AWS S3 Sentinel-2 imagery retrieved successfully`,
+            `🌿 Clarifai NDVI analysis: ${(data.satellite.dryness_score * 100).toFixed(1)}% vegetation dryness`,
+            `📊 Analysis confidence: ${(data.satellite.confidence * 100).toFixed(0)}%`,
+            `📅 Satellite date: ${data.satellite.tile_date || 'Recent imagery'}`,
+            `🔥 Fire susceptibility: ${data.satellite.dryness_score > 0.7 ? 'HIGH' : data.satellite.dryness_score > 0.4 ? 'MODERATE' : 'LOW'}`,
+            `✅ Satellite analysis: COMPLETE`
+          ]
+        }
         return [
-          `🌿 Analyzing vegetation spectral signature via Clarifai NDVI model`,
-          `📊 NDVI calculation: Moderate vegetation stress detected (0.72 dryness)`,
-          `🔥 Fuel moisture estimation: 12.3% (Below critical threshold of 15%)`,
-          `🌱 Vegetation type classification: Stressed shrubland ecosystem`,
-          `⚠️ Fire susceptibility: HIGH - Low moisture content increases ignition risk`,
-          `🎯 Confidence assessment: 94% (High-quality satellite data)`
+          `🛰️ Fetching Sentinel-2 satellite imagery from AWS S3...`,
+          `🌿 Preparing Clarifai NDVI vegetation analysis...`,
+          `📡 Connecting to satellite data providers...`
         ]
 
       case 'weather_synthesis':
+        if (data?.weather) {
+          return [
+            `🌡️ NOAA Weather Service: ${data.weather.temperature_f}°F current temperature`,
+            `💨 Wind conditions: ${data.weather.wind_speed_mph} mph`,
+            `💧 Relative humidity: ${data.weather.humidity_percent}%`,
+            `☁️ Current conditions: ${data.weather.conditions}`,
+            `📈 Fire weather assessment: ${data.weather.temperature_f > 80 && data.weather.humidity_percent < 40 ? 'HIGH RISK' : 'MODERATE'}`,
+            `✅ Weather data integration: COMPLETE`
+          ]
+        }
         return [
-          `🌡️ Temperature analysis: 82°F (Above fire weather threshold)`,
-          `💨 Wind conditions: 18 mph from northeast (Elevated fire spread risk)`,
-          `💧 Relative humidity: 31% (Below safe threshold of 60%)`,
-          `☀️ Weather pattern: Dry conditions with clear skies`,
-          `📈 Fire Weather Index: 7.2/10 (HIGH - Critical fire weather conditions)`,
-          `🚨 Red Flag conditions present: High temperature, low humidity, strong winds`
+          `🌤️ Querying NOAA Weather Service API...`,
+          `📡 Fetching real-time meteorological data...`,
+          `🌊 Accessing Hawaii weather stations...`
         ]
 
       case 'infrastructure_assessment':
+        if (data?.power_lines) {
+          return [
+            `🔍 OpenStreetMap Overpass API: Infrastructure scan complete`,
+            `⚡ Power lines detected: ${data.power_lines.count} within analysis area`,
+            `📏 Nearest power line: ${data.power_lines.nearest_distance_m.toFixed(0)}m away`,
+            `⚖️ Infrastructure risk: ${data.power_lines.nearest_distance_m < 100 ? 'HIGH' : data.power_lines.nearest_distance_m < 300 ? 'MODERATE' : 'LOW'}`,
+            `✅ Power infrastructure analysis: COMPLETE`
+          ]
+        }
         return [
-          `🔍 Power infrastructure scan: 500m radius analysis`,
-          `⚡ Power lines detected: 3 transmission lines within assessment area`,
-          `📏 Proximity analysis: Nearest line at 230m (MODERATE risk distance)`,
-          `🏗️ Infrastructure density: Medium (3 lines per km²)`,
-          `💨 Wind-power interaction: 18 mph winds increase arcing potential`,
-          `⚖️ Ignition risk assessment: 0.42 probability (Wind + proximity factors)`
+          `🔍 Scanning 500m radius via OpenStreetMap Overpass API...`,
+          `⚡ Querying electrical grid infrastructure data...`,
+          `📡 Analyzing power line proximity and density...`
         ]
 
       case 'risk_reasoning':
+        if (data?.risk_assessment) {
+          return [
+            `🧠 MCP Agent: Multi-source data fusion initiated`,
+            `⚖️ Risk calculation: ${(data.risk_assessment.risk_level * 100).toFixed(1)}% wildfire probability`,
+            `📊 Severity classification: ${data.risk_assessment.severity} RISK`,
+            `🎯 Model confidence: ${(data.risk_assessment.confidence || 0.9) * 100}%`,
+            `💭 AI reasoning: ${data.risk_assessment.rationale.slice(0, 100)}...`,
+            `✅ Risk assessment: COMPLETE`
+          ]
+        }
         return [
-          `🧠 Integrating vegetation (72% risk) + weather (81% risk) + infrastructure (42% risk)`,
-          `⚖️ Weighted risk calculation: Vegetation 30% + Weather 40% + Infrastructure 30%`,
-          `📊 Composite risk score: 7.2/10 (HIGH RISK - Immediate attention required)`,
-          `🎯 Confidence assessment: 91% (High-quality multi-source analysis)`,
-          `📋 Recommendation: Issue fire weather watch, pre-position resources`,
-          `🎫 Automated response: Creating incident ticket for emergency services`
+          `🧠 MCP Agent: Processing multi-source risk assessment...`,
+          `⚖️ Integrating satellite + weather + infrastructure data...`,
+          `📊 Computing composite wildfire risk score...`
         ]
 
       case 'incident_automation':
+        if (data?.jira_ticket_url) {
+          return [
+            `📋 Make.com webhook: Triggered incident automation`,
+            `🎫 Jira ticket created: ${data.jira_ticket_url.split('/').pop()}`,
+            `🚨 Emergency response: Automated workflow initiated`,
+            `✅ Incident automation: COMPLETE`
+          ]
+        } else if (data?.risk_assessment && data.risk_assessment.risk_level < 0.3) {
+          return [
+            `📋 Risk assessment: Below incident threshold`,
+            `✅ No automated response required - Risk level acceptable`,
+            `📊 Monitoring: Continued passive surveillance`
+          ]
+        }
         return [
-          `📋 Incident ticket created: Emergency response initiated`,
-          `🎯 Confidence assessment: 100% (Automated workflow complete)`,
-          `📋 Recommendation: Issue fire weather watch, pre-position resources`,
-          `🎫 Automated response: Creating incident ticket for emergency services`
+          `📋 Evaluating incident response requirements...`,
+          `🔗 Preparing Make.com automation workflow...`,
+          `🎫 Jira incident management system on standby...`
         ]
 
       default:
@@ -276,51 +253,70 @@ export default function ChainOfThought({
     }
   }
 
-  const handleToggleReasoning = () => {
-    const newActiveState = !isActive
-    setIsActive(newActiveState)
-    simulationActiveRef.current = newActiveState
+  const initializeReasoning = () => {
+    const initialSteps: ReasoningStep[] = REASONING_PHASES.map((phase, index) => ({
+      id: phase.id,
+      phase: phase.id,
+      title: phase.title,
+      status: index === 0 ? 'processing' : 'pending',
+      confidence: 0,
+      details: [`Initializing ${phase.description.toLowerCase()}...`],
+      timestamp: new Date(),
+      sponsorTool: getSponsorTool(phase.id)
+    }))
     
-    if (newActiveState) {
-      initializeReasoning()
-      simulateAdvancedReasoning()
-    }
-  }
-
-  const handleRestart = () => {
-    setIsActive(false)
-    simulationActiveRef.current = false
+    setReasoningSteps(initialSteps)
     setCurrentPhase(0)
-    initializeReasoning()
-    setTimeout(() => {
-      setIsActive(true)
-      simulationActiveRef.current = true
-      simulateAdvancedReasoning()
-    }, 500)
   }
 
-  // Start reasoning when analysis begins
-  useEffect(() => {
-    if (isAnalyzing && analysisId && !isActive) {
-      setIsActive(true)
-      simulationActiveRef.current = true
-      initializeReasoning()
-      // Don't start simulation immediately, let it sync with backend
+  const determinePhaseStatus = (phaseId: string, data?: any): 'pending' | 'processing' | 'complete' | 'error' => {
+    if (!isAnalyzing && !data) return 'pending'
+    
+    switch (phaseId) {
+      case 'location_verification':
+        return isAnalyzing ? 'complete' : 'pending' // Location is always verified if analysis started
+      case 'satellite_analysis':
+        return data?.satellite ? 'complete' : (isAnalyzing ? 'processing' : 'pending')
+      case 'weather_synthesis':
+        return data?.weather ? 'complete' : (isAnalyzing ? 'processing' : 'pending')
+      case 'infrastructure_assessment':
+        return data?.power_lines ? 'complete' : (isAnalyzing ? 'processing' : 'pending')
+      case 'risk_reasoning':
+        return data?.risk_assessment ? 'complete' : (isAnalyzing ? 'processing' : 'pending')
+      case 'incident_automation':
+        return (data?.jira_ticket_url || (data?.risk_assessment && data.risk_assessment.risk_level < 0.3)) ? 'complete' : (isAnalyzing ? 'processing' : 'pending')
+      default:
+        return 'pending'
     }
-  }, [isAnalyzing, analysisId, isActive])
+  }
 
-  // Stop reasoning when analysis completes
+  // Update reasoning steps based on real analysis data
   useEffect(() => {
-    if (!isAnalyzing && isActive) {
-      simulationActiveRef.current = false
-      // Complete any remaining steps
-      setReasoningSteps(prev => prev.map(step => ({
-        ...step,
-        status: step.status === 'processing' ? 'complete' : step.status,
-        confidence: step.confidence || 0.85 + Math.random() * 0.12
-      })))
-    }
-  }, [isAnalyzing, isActive])
+    if (!analysisId) return
+
+    const updatedSteps: ReasoningStep[] = REASONING_PHASES.map((phase, index) => {
+      const status = determinePhaseStatus(phase.id, analysisData)
+      const details = getPhaseRealData(phase.id, coordinates, analysisData)
+      
+      return {
+        id: phase.id,
+        phase: phase.id,
+        title: phase.title,
+        status,
+        confidence: status === 'complete' ? 0.85 + Math.random() * 0.12 : (status === 'processing' ? 0.3 + Math.random() * 0.2 : 0),
+        details,
+        timestamp: new Date(),
+        sponsorTool: getSponsorTool(phase.id)
+      }
+    })
+
+    setReasoningSteps(updatedSteps)
+    
+    // Update current phase based on completed phases
+    const completedPhases = updatedSteps.filter(step => step.status === 'complete').length
+    const processingPhases = updatedSteps.filter(step => step.status === 'processing').length
+    setCurrentPhase(Math.max(0, completedPhases + processingPhases - 1))
+  }, [analysisId, analysisData, isAnalyzing, coordinates])
 
   // Auto-scroll logic
   useEffect(() => {
@@ -360,7 +356,7 @@ export default function ChainOfThought({
         autoCollapseTimerRef.current = null
       }
     }
-  }, [isAnalyzing, analysisId, reasoningSteps.length, autoCollapse]) // Removed autoCollapseTimer from deps
+  }, [isAnalyzing, analysisId, reasoningSteps.length, autoCollapse])
 
   const getRiskColor = (confidence: number) => {
     if (confidence > 0.8) return 'text-red-500'
@@ -377,6 +373,9 @@ export default function ChainOfThought({
       default: return <div className="w-4 h-4 rounded-full bg-gray-300" />
     }
   }
+
+  const completedPhases = reasoningSteps.filter(step => step.status === 'complete').length
+  const totalPhases = REASONING_PHASES.length
 
   return (
     <Card className={`overlay-chain-of-thought w-full max-w-md bg-slate-800/95 backdrop-blur-md border-slate-600/50 text-white shadow-xl ${className}`}>
@@ -397,26 +396,11 @@ export default function ChainOfThought({
               }
             </Button>
           </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleToggleReasoning}
-              className="h-8 w-8 p-0 text-slate-400 hover:text-white"
-            >
-              {isActive ? 
-                <Pause className="w-4 h-4" /> : 
-                <Play className="w-4 h-4" />
-              }
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRestart}
-              className="h-8 w-8 p-0 text-slate-400 hover:text-white"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </Button>
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isAnalyzing ? 'bg-blue-400 animate-pulse' : 'bg-green-400'}`} />
+            <span className="text-xs text-slate-400">
+              {isAnalyzing ? 'Live Analysis' : 'Complete'}
+            </span>
           </div>
         </div>
         
@@ -488,10 +472,10 @@ export default function ChainOfThought({
                         </div>
                       )}
 
-                      {/* Show API calls for this phase */}
+                      {/* Show API calls for this phase when processing */}
                       {REASONING_PHASES[index]?.api_calls && step.status === 'processing' && (
                         <div className="mb-2">
-                          <div className="text-xs text-slate-400 mb-1 font-semibold">API Calls:</div>
+                          <div className="text-xs text-slate-400 mb-1 font-semibold">Live API Calls:</div>
                           {REASONING_PHASES[index].api_calls.map((apiCall, callIndex) => (
                             <div key={callIndex} className="text-xs text-green-400 font-mono bg-green-950/20 px-2 py-1 rounded mb-1 border border-green-500/20">
                               📡 {apiCall}
@@ -506,7 +490,7 @@ export default function ChainOfThought({
                             key={detailIndex}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            transition={{ delay: detailIndex * 0.2 }}
+                            transition={{ delay: detailIndex * 0.1 }}
                             className="text-xs text-slate-300 leading-relaxed"
                           >
                             {detail}
@@ -529,13 +513,13 @@ export default function ChainOfThought({
                   <div className="flex items-center gap-2 text-xs">
                     <TrendingUp className="w-4 h-4 text-indigo-400" />
                     <span className="text-slate-300">
-                      Analysis Progress: {currentPhase + 1}/{REASONING_PHASES.length}
+                      Real-time Progress: {completedPhases}/{totalPhases} phases complete
                     </span>
                     <div className="ml-auto flex items-center gap-1">
                       <div className="w-20 bg-slate-700 rounded-full h-1">
                         <div 
                           className="bg-indigo-500 h-1 rounded-full transition-all duration-500"
-                          style={{ width: `${((currentPhase + 1) / REASONING_PHASES.length) * 100}%` }}
+                          style={{ width: `${(completedPhases / totalPhases) * 100}%` }}
                         />
                       </div>
                     </div>

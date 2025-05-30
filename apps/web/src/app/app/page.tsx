@@ -581,6 +581,7 @@ function AppContent() {
                 realTime={!!currentAnalysis}
                 isAnalyzing={isAnalyzing}
                 autoCollapse={true}
+                analysisData={currentAnalysis || undefined}
               />
             </div>
           )}
