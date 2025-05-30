@@ -10,9 +10,7 @@ import {
   Zap,
   Shield,
   Clock,
-  Database,
   Brain,
-  GitBranch,
   Eye,
   AlertTriangle,
   CheckCircle,
@@ -21,7 +19,6 @@ import {
   Wind,
   Thermometer,
   Flame,
-  CloudSun,
   MapPin,
   Activity
 } from "lucide-react";
@@ -154,7 +151,7 @@ export default function LandingPage() {
                 <Satellite className="w-10 h-10 text-blue-500 mb-2" />
                 <CardTitle>Satellite Intelligence</CardTitle>
                 <CardDescription>
-                  Real-time Sentinel-2 imagery from AWS S3 processed through Clarifai's NDVI model to assess vegetation
+                  Real-time Sentinel-2 imagery from AWS S3 processed through Clarifai&apos;s NDVI model to assess vegetation
                   dryness across Hawaiian Islands
                 </CardDescription>
               </CardHeader>

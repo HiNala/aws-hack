@@ -296,6 +296,10 @@ def test_clarifai_connection() -> bool:
         logger.error("❌ CLARIFAI_PAT not configured")
         return False
     
+    if not CLARIFAI_USER_ID:
+        logger.error("❌ CLARIFAI_USER_ID not configured")
+        return False
+    
     try:
         logger.info("🔍 Testing Clarifai API connection...")
         
@@ -304,20 +308,59 @@ def test_clarifai_connection() -> bool:
             "Content-Type": "application/json"
         }
         
-        # Test API connectivity with a simple model list request
-        response = httpx.get(
+        # First test basic API connectivity
+        user_response = httpx.get(
+            f"https://api.clarifai.com/v2/users/{CLARIFAI_USER_ID}",
+            headers=headers,
+            timeout=10.0
+        )
+        
+        if user_response.status_code == 401:
+            logger.error("❌ Clarifai authentication failed - check CLARIFAI_PAT")
+            return False
+        elif user_response.status_code == 404:
+            logger.error(f"❌ Clarifai user not found - check CLARIFAI_USER_ID: {CLARIFAI_USER_ID}")
+            return False
+        elif user_response.status_code != 200:
+            logger.error(f"❌ Clarifai API error: HTTP {user_response.status_code}")
+            return False
+        
+        # Test app accessibility
+        app_response = httpx.get(
+            f"https://api.clarifai.com/v2/users/{CLARIFAI_USER_ID}/apps/{CLARIFAI_APP_ID}",
+            headers=headers,
+            timeout=10.0
+        )
+        
+        if app_response.status_code == 404:
+            logger.error(f"❌ Clarifai app '{CLARIFAI_APP_ID}' not found. Please create the app in Clarifai Console.")
+            logger.error("💡 Fix: Go to Clarifai Console → Apps → Create App → Name: 'pyroguard-app'")
+            return False
+        elif app_response.status_code != 200:
+            logger.error(f"❌ Clarifai app access failed: HTTP {app_response.status_code}")
+            return False
+        
+        # Test model list access (optional check)
+        model_response = httpx.get(
             f"https://api.clarifai.com/v2/users/{CLARIFAI_USER_ID}/apps/{CLARIFAI_APP_ID}/models",
             headers=headers,
             timeout=10.0
         )
         
-        if response.status_code == 200:
-            logger.info("✅ Clarifai connection successful")
+        if model_response.status_code == 200:
+            models = model_response.json().get("models", [])
+            logger.info(f"✅ Clarifai connection successful. Found {len(models)} models in app.")
             return True
         else:
-            logger.error(f"❌ Clarifai connection failed: HTTP {response.status_code}")
-            return False
+            logger.warning(f"⚠️ Clarifai models access limited: HTTP {model_response.status_code}")
+            return True  # Connection works, but model access may be limited
             
+    except httpx.TimeoutException:
+        logger.error("⏰ Clarifai API timeout")
+        return False
+    except httpx.RequestError as e:
+        logger.error(f"❌ Clarifai request error: {e}")
+        return False
     except Exception as e:
         logger.error(f"❌ Clarifai connection test failed: {e}")
         return False

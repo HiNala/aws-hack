@@ -4,7 +4,7 @@ import L from 'leaflet'
 import { MapPin, Activity, AlertTriangle } from 'lucide-react'
 
 // Fix for default markers in Leaflet with Next.js
-delete (L.Icon.Default.prototype as any)._getIconUrl
+delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -58,7 +58,7 @@ const analysisIcon = new L.Icon({
 
 // Custom icon for demo locations
 const demoIcon = new L.Icon({
-  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+  iconUrl: 'data:image/svg+xml;base64=' + btoa(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
       <circle cx="12" cy="10" r="3"/>
@@ -68,6 +68,22 @@ const demoIcon = new L.Icon({
   iconAnchor: [10, 20],
   popupAnchor: [0, -20],
   className: 'demo-marker'
+})
+
+// Special prominent icon for West Maui (priority location)
+const westMauiIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64=' + btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32">
+      <circle cx="16" cy="16" r="12" fill="rgba(251, 146, 60, 0.8)" stroke="rgb(234, 88, 12)" stroke-width="3"/>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" transform="translate(-4, -2) scale(0.7)" fill="rgb(239, 68, 68)" stroke="white" stroke-width="1"/>
+      <circle cx="12" cy="8" r="2" transform="translate(-4, -2) scale(0.7)" fill="white"/>
+      <text x="16" y="24" text-anchor="middle" fill="white" font-size="8" font-weight="bold">WEST MAUI</text>
+    </svg>
+  `),
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+  className: 'west-maui-marker'
 })
 
 function MapEventHandler({ onLocationClick, isAnalyzing }: { onLocationClick: (lat: number, lng: number) => void, isAnalyzing: boolean }) {
@@ -279,12 +295,77 @@ export default function MapComponent({
 
           <MapTracker mapRef={mapInstanceRef} />
 
+          {/* Permanent West Maui Marker - Always Visible Priority Location */}
+          <Marker 
+            key={`west-maui-permanent-${mapKey}`}
+            position={[20.8783, -156.6825]} 
+            icon={westMauiIcon}
+            eventHandlers={{
+              click: () => {
+                if (!isAnalyzing) {
+                  onLocationClick(20.8783, -156.6825)
+                }
+              }
+            }}
+          >
+            <Popup className="west-maui-popup">
+              <div className="p-3 min-w-[250px]">
+                <div className="flex items-center space-x-2 mb-3">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                  <h3 className="font-bold text-orange-600">🔥 West Maui Priority Zone</h3>
+                </div>
+                <div className="bg-orange-50 border border-orange-200 rounded p-2 mb-3">
+                  <p className="text-sm text-orange-800 font-medium">High-Risk Wildfire Area</p>
+                  <p className="text-xs text-orange-700">Lahaina Region • Historical Fire Zone</p>
+                </div>
+                <div className="space-y-2 mb-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Location:</span>
+                    <span className="font-mono text-xs">20.8783°N, 156.6825°W</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Risk Level:</span>
+                    <span className="text-orange-600 font-medium">ELEVATED</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Vegetation:</span>
+                    <span className="text-gray-700">Dry grassland/shrub</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => onLocationClick(20.8783, -156.6825)}
+                  disabled={isAnalyzing}
+                  className={`w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                    isAnalyzing 
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                      : 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:from-orange-600 hover:to-red-700 shadow-lg hover:shadow-orange-500/25'
+                  }`}
+                >
+                  {isAnalyzing ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"></div>
+                      <span>Analyzing...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center space-x-2">
+                      <Activity className="w-4 h-4" />
+                      <span>Start Risk Analysis</span>
+                    </div>
+                  )}
+                </button>
+                <div className="mt-2 text-xs text-orange-600 text-center font-medium">
+                  🌺 Priority Analysis Zone • Made with Aloha
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+
           {/* Demo Location Markers */}
           {demoMode && demoLocations.map((location, index) => (
             <Marker 
               key={`demo-${index}-${mapKey}`}
               position={[location.latitude, location.longitude]} 
-              icon={demoIcon}
+              icon={location.name.includes("West Maui") ? westMauiIcon : demoIcon}
               eventHandlers={{
                 click: () => {
                   if (!isAnalyzing) {
@@ -433,10 +514,19 @@ export default function MapComponent({
             <MapPin className="w-4 h-4 text-blue-400" />
             <span className="text-sm font-semibold text-white">Map Instructions</span>
           </div>
-          <p className="text-xs text-gray-400 leading-relaxed">
-            Click anywhere on the Hawaiian Islands to start real-time wildfire risk analysis. 
+          <p className="text-xs text-gray-400 leading-relaxed mb-2">
+            Click anywhere on the Hawaiian Islands to start real-time wildfire risk analysis.
             {demoMode && ' Demo locations are marked with pins for quick testing.'}
           </p>
+          <div className="bg-orange-500/20 border border-orange-500/40 rounded p-2">
+            <div className="flex items-center space-x-1 mb-1">
+              <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
+              <span className="text-xs font-semibold text-orange-300">West Maui Priority Zone</span>
+            </div>
+            <p className="text-xs text-orange-200">
+              🔥 High-risk area marked with orange marker. Click for priority analysis.
+            </p>
+          </div>
         </div>
       )}
 
@@ -482,6 +572,23 @@ export default function MapComponent({
           filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         }
         
+        .west-maui-marker {
+          filter: drop-shadow(0 6px 12px rgba(234, 88, 12, 0.6));
+          animation: pulse-glow 3s ease-in-out infinite;
+          z-index: 1000 !important;
+        }
+        
+        @keyframes pulse-glow {
+          0%, 100% {
+            filter: drop-shadow(0 6px 12px rgba(234, 88, 12, 0.6));
+            transform: scale(1);
+          }
+          50% {
+            filter: drop-shadow(0 8px 16px rgba(234, 88, 12, 0.8));
+            transform: scale(1.05);
+          }
+        }
+        
         .leaflet-popup-content-wrapper {
           border-radius: 8px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -497,6 +604,21 @@ export default function MapComponent({
         
         .analysis-popup .leaflet-popup-content {
           margin: 0;
+        }
+        
+        .west-maui-popup .leaflet-popup-content {
+          margin: 0;
+        }
+        
+        .west-maui-popup .leaflet-popup-content-wrapper {
+          background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+          border: 2px solid #fed7aa;
+          box-shadow: 0 8px 24px rgba(234, 88, 12, 0.25);
+        }
+        
+        .west-maui-popup .leaflet-popup-tip {
+          background: #fef2f2;
+          border: 1px solid #fed7aa;
         }
       `}</style>
     </div>

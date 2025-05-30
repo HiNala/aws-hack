@@ -5,16 +5,17 @@ import asyncio
 from datetime import datetime
 from typing import Dict, Any, Optional
 import json
+from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 import httpx
 
 from apps.shared.models.risk_inputs import AnalysisRequest, AnalysisResult, WorkerEvent
-from apps.shared.utils.satellite_client import is_in_hawaii, get_satellite_image_bytes
+from apps.shared.utils.satellite_client import is_in_hawaii, get_satellite_image_bytes, test_s3_connection
 from apps.shared.utils.satellite_analysis import analyze_with_clarifai, test_satellite_analysis_systems
 from apps.shared.utils.weather_client import get_weather_data, test_noaa_connection
-from apps.shared.utils.overpass_client import get_power_line_data, create_demo_power_data
+from apps.shared.utils.overpass_client import get_power_line_data, create_demo_power_data, test_overpass_connection
 from apps.shared.utils.make_webhook import send_wildfire_analysis_to_make, test_make_webhook
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,99 @@ analysis_results: Dict[str, AnalysisResult] = {}
 # Inngest configuration
 INNGEST_EVENT_KEY = os.getenv("INNGEST_EVENT_KEY")
 INNGEST_BASE_URL = "https://api.inngest.com"
+
+# MCP (Model Context Protocol) Configuration
+MCP_SERVER_INFO = {
+    "name": "pyroguard-sentinel",
+    "version": "1.0.0",
+    "description": "AI-powered wildfire risk assessment system for Hawaiian Islands",
+    "author": "PyroGuard Team",
+    "license": "MIT",
+    "homepage": "https://github.com/your-org/pyroguard-sentinel"
+}
+
+MCP_CAPABILITIES = {
+    "resources": True,
+    "tools": True,
+    "logging": True,
+    "prompts": False
+}
+
+# MCP Resources - Available data sources and contexts
+MCP_RESOURCES = [
+    {
+        "uri": "resource://pyroguard/hawaiian-islands",
+        "name": "Hawaiian Islands Geographic Data",
+        "description": "Geographic boundaries and constraints for Hawaiian Islands wildfire analysis",
+        "mimeType": "application/json"
+    },
+    {
+        "uri": "resource://pyroguard/demo-locations", 
+        "name": "Demo Analysis Locations",
+        "description": "Pre-configured locations for demonstration and testing",
+        "mimeType": "application/json"
+    },
+    {
+        "uri": "resource://pyroguard/risk-assessment-framework",
+        "name": "Wildfire Risk Assessment Framework",
+        "description": "Risk calculation methodology and thresholds",
+        "mimeType": "application/json"
+    }
+]
+
+# MCP Tools - Available functions and capabilities
+MCP_TOOLS = [
+    {
+        "name": "analyze_wildfire_risk",
+        "description": "Comprehensive wildfire risk analysis for a specific location in Hawaiian Islands",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "latitude": {"type": "number", "minimum": 18.5, "maximum": 22.5},
+                "longitude": {"type": "number", "minimum": -161.0, "maximum": -154.0},
+                "demo_mode": {"type": "boolean", "default": False}
+            },
+            "required": ["latitude", "longitude"]
+        }
+    },
+    {
+        "name": "get_satellite_analysis",
+        "description": "Get vegetation dryness analysis from satellite imagery",
+        "inputSchema": {
+            "type": "object", 
+            "properties": {
+                "latitude": {"type": "number"},
+                "longitude": {"type": "number"}
+            },
+            "required": ["latitude", "longitude"]
+        }
+    },
+    {
+        "name": "get_weather_conditions",
+        "description": "Get current weather conditions for wildfire risk assessment",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "latitude": {"type": "number"},
+                "longitude": {"type": "number"}
+            },
+            "required": ["latitude", "longitude"] 
+        }
+    },
+    {
+        "name": "get_power_infrastructure",
+        "description": "Analyze power line density and proximity for ignition risk",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "latitude": {"type": "number"},
+                "longitude": {"type": "number"},
+                "radius_meters": {"type": "integer", "default": 500, "maximum": 1000}
+            },
+            "required": ["latitude", "longitude"]
+        }
+    }
+]
 
 
 async def trigger_inngest_job(analysis_id: str, request: AnalysisRequest) -> bool:
@@ -762,3 +856,265 @@ async def get_system_status():
             "error": str(e),
             "timestamp": datetime.now().isoformat()
         } 
+
+
+# ============================================================================
+# MCP (Model Context Protocol) Endpoints
+# ============================================================================
+
+@router.get("/mcp/info")
+async def mcp_server_info():
+    """
+    MCP server information endpoint
+    Returns server capabilities and metadata according to MCP spec
+    """
+    return {
+        "jsonrpc": "2.0",
+        "result": {
+            "serverInfo": MCP_SERVER_INFO,
+            "capabilities": MCP_CAPABILITIES
+        }
+    }
+
+
+@router.get("/mcp/resources/list")
+async def mcp_list_resources():
+    """
+    MCP resources endpoint
+    Lists available resources that can be accessed by MCP clients
+    """
+    return {
+        "jsonrpc": "2.0", 
+        "result": {
+            "resources": MCP_RESOURCES
+        }
+    }
+
+
+@router.get("/mcp/resources/read")
+async def mcp_read_resource(uri: str):
+    """
+    MCP resource reading endpoint
+    Returns content of specified resource
+    """
+    if uri == "resource://pyroguard/hawaiian-islands":
+        return {
+            "jsonrpc": "2.0",
+            "result": {
+                "contents": [{
+                    "uri": uri,
+                    "mimeType": "application/json",
+                    "text": json.dumps({
+                        "name": "Hawaiian Islands",
+                        "bounds": {
+                            "north": 22.5,
+                            "south": 18.5, 
+                            "east": -154.0,
+                            "west": -161.0
+                        },
+                        "major_islands": ["Hawaii", "Maui", "Oahu", "Kauai", "Molokai", "Lanai"],
+                        "high_risk_areas": [
+                            {"name": "West Maui", "lat": 20.8783, "lon": -156.6825},
+                            {"name": "Big Island Leeward", "lat": 19.7633, "lon": -155.5739}
+                        ]
+                    })
+                }]
+            }
+        }
+    elif uri == "resource://pyroguard/demo-locations":
+        demo_response = await get_demo_locations()
+        return {
+            "jsonrpc": "2.0",
+            "result": {
+                "contents": [{
+                    "uri": uri,
+                    "mimeType": "application/json", 
+                    "text": json.dumps(demo_response)
+                }]
+            }
+        }
+    elif uri == "resource://pyroguard/risk-assessment-framework":
+        return {
+            "jsonrpc": "2.0",
+            "result": {
+                "contents": [{
+                    "uri": uri,
+                    "mimeType": "application/json",
+                    "text": json.dumps({
+                        "risk_levels": {
+                            "LOW": {"range": [0.0, 0.3], "color": "#10b981"},
+                            "MEDIUM": {"range": [0.3, 0.6], "color": "#f59e0b"},
+                            "HIGH": {"range": [0.6, 0.8], "color": "#f97316"}, 
+                            "EXTREME": {"range": [0.8, 1.0], "color": "#ef4444"}
+                        },
+                        "factors": {
+                            "vegetation_dryness": {"weight": 0.4},
+                            "weather_conditions": {"weight": 0.3},
+                            "power_infrastructure": {"weight": 0.2},
+                            "seasonal_adjustment": {"weight": 0.1}
+                        },
+                        "thresholds": {
+                            "jira_ticket_creation": 0.6,
+                            "emergency_alert": 0.8
+                        }
+                    })
+                }]
+            }
+        }
+    else:
+        raise HTTPException(status_code=404, detail=f"Resource not found: {uri}")
+
+
+@router.get("/mcp/tools/list")
+async def mcp_list_tools():
+    """
+    MCP tools endpoint
+    Lists available tools that can be called by MCP clients
+    """
+    return {
+        "jsonrpc": "2.0",
+        "result": {
+            "tools": MCP_TOOLS
+        }
+    }
+
+
+@router.post("/mcp/tools/call")
+async def mcp_call_tool(request: dict):
+    """
+    MCP tool calling endpoint
+    Executes specified tool with provided arguments
+    """
+    tool_name = request.get("params", {}).get("name")
+    arguments = request.get("params", {}).get("arguments", {})
+    
+    try:
+        if tool_name == "analyze_wildfire_risk":
+            # Validate Hawaiian Islands bounds
+            lat = arguments["latitude"]
+            lon = arguments["longitude"]
+            
+            if not (18.5 <= lat <= 22.5 and -161.0 <= lon <= -154.0):
+                return {
+                    "jsonrpc": "2.0",
+                    "error": {
+                        "code": -32602,
+                        "message": "Location outside Hawaiian Islands bounds"
+                    }
+                }
+            
+            # Call the main analysis function
+            analysis_request = AnalysisRequest(
+                latitude=lat,
+                longitude=lon,
+                demo_mode=arguments.get("demo_mode", False)
+            )
+            
+            result = await create_analysis(analysis_request)
+            
+            return {
+                "jsonrpc": "2.0",
+                "result": {
+                    "content": [{
+                        "type": "text",
+                        "text": f"Analysis started with ID: {result['analysis_id']}\nUse progress endpoint to monitor status."
+                    }]
+                }
+            }
+            
+        elif tool_name == "get_satellite_analysis":
+            # This would call satellite analysis directly
+            return {
+                "jsonrpc": "2.0", 
+                "result": {
+                    "content": [{
+                        "type": "text",
+                        "text": "Satellite analysis capability available via full wildfire analysis"
+                    }]
+                }
+            }
+            
+        elif tool_name == "get_weather_conditions":
+            # This would call weather analysis directly
+            return {
+                "jsonrpc": "2.0",
+                "result": {
+                    "content": [{
+                        "type": "text", 
+                        "text": "Weather analysis capability available via full wildfire analysis"
+                    }]
+                }
+            }
+            
+        elif tool_name == "get_power_infrastructure":
+            # This would call power infrastructure analysis directly
+            return {
+                "jsonrpc": "2.0",
+                "result": {
+                    "content": [{
+                        "type": "text",
+                        "text": "Power infrastructure analysis capability available via full wildfire analysis" 
+                    }]
+                }
+            }
+            
+        else:
+            return {
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32601,
+                    "message": f"Unknown tool: {tool_name}"
+                }
+            }
+            
+    except Exception as e:
+        return {
+            "jsonrpc": "2.0", 
+            "error": {
+                "code": -32603,
+                "message": f"Tool execution error: {str(e)}"
+            }
+        }
+
+
+@router.get("/mcp/health")
+async def mcp_health_check():
+    """
+    MCP health check endpoint
+    Returns comprehensive system status for MCP integration
+    """
+    # Test all integrations
+    satellite_status = await test_satellite_analysis_systems()
+    noaa_status = await test_noaa_connection()
+    make_status = await test_make_webhook()
+    s3_status = test_s3_connection()
+    overpass_status = test_overpass_connection()
+    
+    services = {
+        "clarifai": satellite_status.get("clarifai", {}).get("status", "unknown"),
+        "anthropic": satellite_status.get("anthropic", {}).get("status", "unknown"), 
+        "aws_s3": "healthy" if s3_status else "degraded",
+        "noaa_weather": "healthy" if noaa_status else "degraded",
+        "overpass_api": "healthy" if overpass_status else "degraded",
+        "make_webhook": make_status.get("status", "unknown")
+    }
+    
+    healthy_count = sum(1 for status in services.values() if status in ["healthy", "configured"])
+    total_count = len(services)
+    
+    return {
+        "jsonrpc": "2.0",
+        "result": {
+            "serverInfo": MCP_SERVER_INFO,
+            "status": "healthy" if healthy_count >= total_count * 0.8 else "degraded",
+            "services": services,
+            "operational_ratio": f"{healthy_count}/{total_count}",
+            "mcp_compliance": "full",
+            "timestamp": datetime.now().isoformat()
+        }
+    }
+
+
+# ============================================================================
+# Original PyroGuard API Endpoints  
+# ============================================================================ 

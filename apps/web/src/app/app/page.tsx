@@ -177,7 +177,7 @@ function AppContent() {
     
     checkConnection()
     loadDemoLocations()
-  }, [isAuthenticated, checkConnection, loadDemoLocations])
+  }, [isAuthenticated, checkConnection, loadDemoLocations, showNotification])
 
   const handleLogout = () => {
     localStorage.removeItem('pyroguard_auth')
@@ -284,12 +284,12 @@ function AppContent() {
               eventSourceRef.current = null
               showNotification('Analysis stream error occurred', 'error')
             }
-          } catch (error) {
-            console.error('Failed to parse progress data:', error)
+          } catch (parseError) {
+            console.error('Failed to parse progress data:', parseError)
           }
         }
 
-        eventSource.onerror = (error) => {
+        eventSource.onerror = () => {
           console.warn('EventSource connection lost, attempting fallback...')
           setIsAnalyzing(false)
           if (eventSourceRef.current) {
@@ -304,10 +304,10 @@ function AppContent() {
         showNotification('Unable to establish real-time connection', 'error')
       }
 
-    } catch (error) {
-      console.error('Analysis failed:', error)
+    } catch (requestError) {
+      console.error('Analysis failed:', requestError)
       setIsAnalyzing(false)
-      showNotification(error instanceof Error ? error.message : 'Failed to start analysis', 'error')
+      showNotification(requestError instanceof Error ? requestError.message : 'Failed to start analysis', 'error')
     }
   }
 
@@ -470,24 +470,39 @@ function AppContent() {
           </div>
 
           {/* Quick Analysis Button for West Maui */}
-          <Card className="bg-orange-500/10 border-orange-500/30 mt-4">
-            <CardContent className="p-3">
-              <div className="flex items-center space-x-2 mb-2">
-                <Flame className="w-4 h-4 text-orange-400" />
-                <h3 className="font-medium text-orange-400 text-sm">Quick Analysis</h3>
-              </div>
-              <p className="text-xs text-slate-400 mb-3">
-                Start analysis at West Maui (high-risk area)
-              </p>
-              <Button 
-                onClick={() => handleMapClick(20.8783, -156.6825)}
-                disabled={isAnalyzing}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs py-2"
-              >
-                {isAnalyzing ? 'Running...' : 'Analyze West Maui'}
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="mt-6 p-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+              <h3 className="font-semibold text-orange-300">Quick West Maui Analysis</h3>
+            </div>
+            <p className="text-xs text-orange-200 mb-3">
+              Priority wildfire risk area. Click to analyze current conditions at Lahaina region.
+            </p>
+            <button
+              onClick={() => handleMapClick(20.8783, -156.6825)}
+              disabled={isAnalyzing}
+              className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                isAnalyzing 
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-orange-500 to-red-600 text-white hover:from-orange-600 hover:to-red-700 transform hover:scale-105 shadow-lg hover:shadow-orange-500/25'
+              }`}
+            >
+              {isAnalyzing ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"></div>
+                  <span>Analyzing...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center space-x-2">
+                  <Activity className="w-5 h-5" />
+                  <span>Analyze West Maui Now</span>
+                </div>
+              )}
+            </button>
+            <div className="mt-2 text-xs text-orange-300/80 text-center">
+              🌺 Made with Aloha • Focus Area: Lahaina Region
+            </div>
+          </div>
         </div>
 
         {/* Center - Map */}
