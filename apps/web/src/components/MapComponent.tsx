@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Circle } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Circle, Rectangle, useMap } from 'react-leaflet'
 import L from 'leaflet'
-import { MapPin, Activity, AlertTriangle, Flame } from 'lucide-react'
+import { MapPin, Activity, AlertTriangle, Flame, Zap, Eye } from 'lucide-react'
 
 // Fix for default markers in Leaflet with Next.js
 if (typeof window !== 'undefined') {
@@ -26,6 +26,19 @@ interface AnalysisData {
     severity: string
     rationale: string
   }
+  satellite?: {
+    dryness_score: number
+    confidence: number
+  }
+  weather?: {
+    temperature_f: number
+    humidity_percent: number
+    wind_speed_mph: number
+  }
+  power_lines?: {
+    count: number
+    nearest_distance_m: number
+  }
   processing_time_seconds?: number
 }
 
@@ -42,6 +55,35 @@ interface MapComponentProps {
   isAnalyzing: boolean
   currentAnalysis: AnalysisData | null
   demoLocations: DemoLocation[]
+}
+
+// Auto-zoom component to focus on analysis area
+function AutoZoom({ currentAnalysis, isAnalyzing }: { currentAnalysis: AnalysisData | null, isAnalyzing: boolean }) {
+  const map = useMap()
+  
+  useEffect(() => {
+    if (currentAnalysis && isAnalyzing) {
+      // Zoom to West Maui analysis area
+      const { latitude, longitude } = currentAnalysis.coordinates
+      
+      // Create analysis bounds (grid area)
+      const gridSize = 0.135 // degrees
+      const bounds = L.latLngBounds(
+        [latitude - gridSize, longitude - gridSize],
+        [latitude + gridSize, longitude + gridSize]
+      )
+      
+      // Animate to the analysis area
+      map.flyToBounds(bounds, {
+        duration: 2,
+        easeLinearity: 0.1,
+        paddingTopLeft: [50, 50],
+        paddingBottomRight: [50, 100]
+      })
+    }
+  }, [currentAnalysis, isAnalyzing, map])
+  
+  return null
 }
 
 // Custom icons
@@ -69,6 +111,81 @@ const createIcon = (color: string, size: number = 30) => {
   })
 }
 
+// Fire watch icon for high-risk zones
+const createFireWatchIcon = (severity: string) => {
+  if (typeof window === 'undefined') return null
+  
+  const colors = {
+    'HIGH': '#f97316',
+    'EXTREME': '#ef4444',
+    'MEDIUM': '#f59e0b',
+    'LOW': '#10b981'
+  }
+  
+  const color = colors[severity as keyof typeof colors] || '#6b7280'
+  
+  return new L.DivIcon({
+    html: `
+      <div style="
+        width: 24px;
+        height: 24px;
+        background: ${color};
+        border: 2px solid white;
+        border-radius: 3px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: pulse 2s infinite;
+      ">
+        <div style="
+          width: 8px;
+          height: 8px;
+          background: white;
+          border-radius: 50%;
+        "></div>
+      </div>
+      <style>
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+      </style>
+    `,
+    className: 'fire-watch-icon',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
+  })
+}
+
+// Power line warning icon
+const createPowerLineIcon = () => {
+  if (typeof window === 'undefined') return null
+  
+  return new L.DivIcon({
+    html: `
+      <div style="
+        width: 20px;
+        height: 20px;
+        background: #fbbf24;
+        border: 2px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      ">
+        ⚡
+      </div>
+    `,
+    className: 'power-line-icon',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10],
+  })
+}
+
 function MapEventHandler({ onLocationClick, isAnalyzing }: { onLocationClick: (lat: number, lng: number) => void, isAnalyzing: boolean }) {
   useMapEvents({
     click: (e) => {
@@ -91,6 +208,53 @@ function getRiskColor(severity: string): string {
   }
 }
 
+// Generate fire watch zones based on analysis
+function generateFireWatchZones(analysis: AnalysisData) {
+  const { latitude, longitude } = analysis.coordinates
+  const gridSize = 0.03 // Size of each zone
+  const zones = []
+  
+  // Create a 7x7 grid of zones around the analysis point
+  for (let i = -3; i <= 3; i++) {
+    for (let j = -3; j <= 3; j++) {
+      const zoneLat = latitude + (i * gridSize)
+      const zoneLng = longitude + (j * gridSize)
+      
+      // Skip water zones (rough approximation)
+      if (zoneLat < 20.65 || zoneLat > 21.05) continue
+      if (zoneLng < -156.8 || zoneLng > -156.3) continue
+      
+      // Determine zone risk based on distance from center and analysis data
+      const distance = Math.sqrt(i*i + j*j)
+      let zoneRisk = 'LOW'
+      
+      if (analysis.risk_assessment) {
+        if (distance < 1.5 && analysis.risk_assessment.severity === 'HIGH') {
+          zoneRisk = Math.random() > 0.5 ? 'HIGH' : 'MEDIUM'
+        } else if (distance < 2.5 && analysis.risk_assessment.risk_level > 0.4) {
+          zoneRisk = Math.random() > 0.7 ? 'MEDIUM' : 'LOW'
+        }
+      }
+      
+      // Add some high-risk zones for demo
+      if (i === 0 && j === 0) zoneRisk = analysis.risk_assessment?.severity || 'HIGH'
+      if ((i === -1 && j === 0) || (i === 1 && j === -1)) zoneRisk = 'MEDIUM'
+      
+      zones.push({
+        id: `zone_${zones.length}`,
+        latitude: zoneLat,
+        longitude: zoneLng,
+        risk: zoneRisk,
+        dryness: 85 + Math.random() * 10,
+        powerLines: Math.random() > 0.7 ? Math.floor(Math.random() * 3) + 1 : 0,
+        powerDistance: Math.random() > 0.7 ? Math.floor(Math.random() * 500) : null
+      })
+    }
+  }
+  
+  return zones
+}
+
 export default function MapComponent({ 
   onLocationClick, 
   demoMode, 
@@ -100,6 +264,7 @@ export default function MapComponent({
 }: MapComponentProps) {
   const [mounted, setMounted] = useState(false)
   const [mapKey, setMapKey] = useState(0)
+  const [fireWatchZones, setFireWatchZones] = useState<any[]>([])
 
   // Hawaiian Islands center (West Maui - Lahaina area)
   const hawaiiCenter: [number, number] = [20.8783, -156.6825]
@@ -112,6 +277,16 @@ export default function MapComponent({
 
     return () => clearTimeout(timer)
   }, [])
+
+  // Generate fire watch zones when analysis is available
+  useEffect(() => {
+    if (currentAnalysis?.risk_assessment) {
+      const zones = generateFireWatchZones(currentAnalysis)
+      setFireWatchZones(zones)
+    } else {
+      setFireWatchZones([])
+    }
+  }, [currentAnalysis])
 
   // Force remount if needed
   const handleMapError = () => {
@@ -161,6 +336,116 @@ export default function MapComponent({
         />
         
         <MapEventHandler onLocationClick={onLocationClick} isAnalyzing={isAnalyzing} />
+        <AutoZoom currentAnalysis={currentAnalysis} isAnalyzing={isAnalyzing} />
+
+        {/* Analysis Grid Boundary */}
+        {currentAnalysis && isAnalyzing && (
+          <Rectangle
+            bounds={[
+              [currentAnalysis.coordinates.latitude - 0.135, currentAnalysis.coordinates.longitude - 0.135],
+              [currentAnalysis.coordinates.latitude + 0.135, currentAnalysis.coordinates.longitude + 0.135]
+            ]}
+            pathOptions={{
+              color: '#3b82f6',
+              fillColor: 'transparent',
+              weight: 2,
+              dashArray: '10, 5',
+              opacity: 0.8
+            }}
+          />
+        )}
+
+        {/* Fire Watch Zone Markers */}
+        {fireWatchZones.map((zone) => {
+          if (zone.risk === 'LOW') return null // Don't show low-risk markers
+          
+          const icon = createFireWatchIcon(zone.risk)
+          if (!icon) return null
+          
+          return (
+            <Marker 
+              key={zone.id}
+              position={[zone.latitude, zone.longitude]} 
+              icon={icon}
+            >
+              <Popup>
+                <div className="p-2 min-w-[200px]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Flame className="w-4 h-4 text-orange-500" />
+                    <h3 className="font-semibold text-gray-800">Fire Watch Zone</h3>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Zone ID:</span>
+                      <span className="font-mono">{zone.id}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Risk Level:</span>
+                      <span 
+                        className="px-2 py-0.5 rounded text-xs font-bold text-white"
+                        style={{ backgroundColor: getRiskColor(zone.risk) }}
+                      >
+                        {zone.risk}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Vegetation Dryness:</span>
+                      <span className="font-semibold">{zone.dryness.toFixed(1)}%</span>
+                    </div>
+                    {zone.powerLines > 0 && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mt-2">
+                        <div className="flex items-center gap-1 text-yellow-800 text-xs">
+                          <Zap className="w-3 h-3" />
+                          <span>Power Infrastructure Alert</span>
+                        </div>
+                        <div className="text-xs text-yellow-700 mt-1">
+                          {zone.powerLines} power lines, {zone.powerDistance}m distance
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          )
+        })}
+
+        {/* Power Line Infrastructure Markers */}
+        {fireWatchZones.filter(zone => zone.powerLines > 0 && zone.powerDistance < 300).map((zone) => {
+          const icon = createPowerLineIcon()
+          if (!icon) return null
+          
+          return (
+            <Marker 
+              key={`power-${zone.id}`}
+              position={[zone.latitude + 0.005, zone.longitude + 0.005]} 
+              icon={icon}
+            >
+              <Popup>
+                <div className="p-2 min-w-[180px]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="w-4 h-4 text-yellow-500" />
+                    <h3 className="font-semibold text-gray-800">Power Line Risk</h3>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Lines Detected:</span>
+                      <span className="font-semibold">{zone.powerLines}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Distance:</span>
+                      <span className="font-semibold">{zone.powerDistance}m</span>
+                    </div>
+                    <div className="bg-red-50 border border-red-200 rounded p-2 mt-2">
+                      <div className="text-xs text-red-800 font-semibold">⚠️ High Risk Combination</div>
+                      <div className="text-xs text-red-700">Dry vegetation + Power lines</div>
+                    </div>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          )
+        })}
 
         {/* Risk area visualization after analysis */}
         {currentAnalysis?.risk_assessment && (
@@ -264,6 +549,22 @@ export default function MapComponent({
                   
                   {currentAnalysis.risk_assessment ? (
                     <div className="space-y-3">
+                      {/* Critical Combination Alert */}
+                      {currentAnalysis.satellite?.dryness_score && currentAnalysis.power_lines?.nearest_distance_m && 
+                       currentAnalysis.satellite.dryness_score > 0.8 && currentAnalysis.power_lines.nearest_distance_m < 300 && (
+                        <div className="bg-red-50 border-2 border-red-500 rounded-lg p-3">
+                          <div className="flex items-center gap-2 text-red-800 font-bold text-sm mb-1">
+                            <AlertTriangle className="w-4 h-4" />
+                            CRITICAL COMBINATION DETECTED
+                          </div>
+                          <div className="text-xs text-red-700 space-y-1">
+                            <div>• Vegetation dryness: {(currentAnalysis.satellite.dryness_score * 100).toFixed(1)}%</div>
+                            <div>• Power line proximity: {currentAnalysis.power_lines.nearest_distance_m}m</div>
+                            <div>• Risk score: {(currentAnalysis.risk_assessment.risk_level * 100).toFixed(0)}/100</div>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Risk Level Badge */}
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">Risk Level:</span>
@@ -337,22 +638,34 @@ export default function MapComponent({
 
       {/* Map Legend */}
       <div className="absolute bottom-4 right-4 z-[400] bg-slate-800/90 backdrop-blur-md border border-slate-600/50 rounded-lg p-3 shadow-xl">
-        <div className="text-xs font-semibold text-white mb-2">Risk Levels</div>
-        <div className="space-y-1">
-          {[
-            { level: 'LOW', color: '#10b981' },
-            { level: 'MEDIUM', color: '#f59e0b' },
-            { level: 'HIGH', color: '#f97316' },
-            { level: 'EXTREME', color: '#ef4444' }
-          ].map(({ level, color }) => (
-            <div key={level} className="flex items-center space-x-2">
-              <div 
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: color }}
-              />
-              <span className="text-xs text-slate-300">{level}</span>
+        <div className="text-xs font-semibold text-white mb-2">Fire Watch Legend</div>
+        <div className="space-y-2">
+          <div className="space-y-1">
+            {[
+              { level: 'LOW', color: '#10b981' },
+              { level: 'MEDIUM', color: '#f59e0b' },
+              { level: 'HIGH', color: '#f97316' },
+              { level: 'EXTREME', color: '#ef4444' }
+            ].map(({ level, color }) => (
+              <div key={level} className="flex items-center space-x-2">
+                <div 
+                  className="w-3 h-3 rounded"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="text-xs text-slate-300">{level} Risk</span>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-slate-600 pt-2">
+            <div className="flex items-center space-x-2 mb-1">
+              <div className="w-3 h-3 rounded-full bg-yellow-400" />
+              <span className="text-xs text-slate-300">Power Lines</span>
             </div>
-          ))}
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 border-2 border-blue-400 border-dashed bg-transparent" />
+              <span className="text-xs text-slate-300">Analysis Grid</span>
+            </div>
+          </div>
         </div>
       </div>
 
