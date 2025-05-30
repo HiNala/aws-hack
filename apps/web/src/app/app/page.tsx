@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -91,6 +91,21 @@ interface DemoLocation {
 }
 
 export default function App() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-slate-900">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading PyroGuard Sentinel...</p>
+        </div>
+      </div>
+    }>
+      <AppContent />
+    </Suspense>
+  )
+}
+
+function AppContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisData | null>(null)
@@ -306,7 +321,6 @@ export default function App() {
   const stopAnalysis = () => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close()
-      eventSourceRef.current = null
     }
     setIsAnalyzing(false)
     showNotification('Analysis stopped', 'info')
@@ -357,7 +371,7 @@ export default function App() {
               <h1 className="text-xl font-bold text-white">PyroGuard Sentinel</h1>
             </div>
             <Badge variant="outline" className="text-xs text-slate-400 border-slate-600">
-              AWS MCP Agents Hackathon 2024
+              AWS MCP Agents Hackathon 2025
             </Badge>
           </div>
           
@@ -396,6 +410,12 @@ export default function App() {
                  'Ready'}
               </Badge>
             )}
+
+            {/* Made with Aloha accent */}
+            <div className="flex items-center space-x-1 text-xs text-slate-500 bg-slate-800/50 px-2 py-1 rounded border border-slate-600/30">
+              <span>🌺</span>
+              <span>Made with Aloha</span>
+            </div>
 
             <Button 
               variant="outline" 
