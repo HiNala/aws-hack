@@ -28,6 +28,156 @@ This guide covers complete deployment of PyroGuard Sentinel, an AI-powered wildf
 
 ---
 
+## 🔐 Getting API Credentials (Step-by-Step)
+
+### 1. Clarifai API Setup (REQUIRED)
+
+**Step 1: Create Account**
+1. Go to [clarifai.com](https://clarifai.com) and click **"Sign Up"**
+2. Use your email and verify the account
+3. Complete the onboarding (select "Developer" as use case)
+
+**Step 2: Get Personal Access Token (PAT)**
+1. Log into Clarifai Portal
+2. Click your profile picture → **"Settings"**
+3. Go to **"Security"** → **"Personal Access Tokens"**
+4. Click **"Create Personal Access Token"**
+5. Name: `PyroGuard Hackathon 2025`
+6. Scopes: Select **"All"** (or minimum: Predict, Inputs, Models)
+7. Click **"Create"** and copy the token immediately
+8. **Save as**: `CLARIFAI_PAT=clarifai_pat_your_long_token_here`
+
+**Step 3: Get User ID**
+1. Still in Clarifai Portal, click your profile picture
+2. Your User ID is displayed in the dropdown menu
+3. **Save as**: `CLARIFAI_USER_ID=your_username_here`
+
+**Step 4: Create Application**
+1. Go to **"Apps"** → **"Create App"**
+2. App Name: `pyroguard-app` (exactly this name)
+3. Use Case: **"Visual Recognition"**
+4. Click **"Create App"**
+5. **Save as**: `CLARIFAI_APP_ID=pyroguard-app`
+
+**Step 5: Add Satellite Analysis Models**
+1. In your `pyroguard-app`, go to **"Model Gallery"**
+2. Search for **"NDVI"** or **"Crop Health"**
+3. Add **"Crop Health NDVI"** model to your app
+4. OR search **"Land Cover"** and add vegetation analysis models
+5. Verify models are listed in your app's **"Models"** tab
+
+### 2. AWS Account Setup (REQUIRED)
+
+**Step 1: Create AWS Account**
+1. Go to [aws.amazon.com](https://aws.amazon.com) → **"Create AWS Account"**
+2. Complete registration (credit card required but won't be charged for free tier)
+
+**Step 2: Create IAM User**
+1. Go to **IAM Console** → **"Users"** → **"Create User"**
+2. Username: `pyroguard-hackathon`
+3. Attach policies directly:
+   - `AmazonS3ReadOnlyAccess`
+   - `AmazonBedrockFullAccess`
+4. Click **"Create User"**
+
+**Step 3: Create Access Keys**
+1. Click on your new user → **"Security credentials"**
+2. **"Create access key"** → **"Application running outside AWS"**
+3. Copy both keys immediately:
+   - **Save as**: `AWS_ACCESS_KEY_ID=AKIA...`
+   - **Save as**: `AWS_SECRET_ACCESS_KEY=abc123...`
+4. **Save as**: `AWS_REGION=us-west-2`
+
+### 3. Anthropic API Key (REQUIRED)
+
+**Step 1: Create Account**
+1. Go to [console.anthropic.com](https://console.anthropic.com)
+2. Sign up with email and verify
+
+**Step 2: Get API Key**
+1. Go to **"API Keys"** → **"Create Key"**
+2. Name: `PyroGuard Hackathon`
+3. Copy the key (starts with `sk-ant-`)
+4. **Save as**: `ANTHROPIC_API_KEY=sk-ant-your_key_here`
+
+### 4. Make.com Webhook Setup (REQUIRED)
+
+**Step 1: Create Account**
+1. Go to [make.com](https://make.com) and sign up (free tier)
+
+**Step 2: Create Webhook**
+1. Create **"New Scenario"**
+2. Add **"Webhooks"** → **"Custom webhook"** as first module
+3. Click **"Add"** → Copy the webhook URL
+4. **Save as**: `MAKE_WEBHOOK_URL=https://hook.us2.make.com/abc123...`
+
+### 5. Jira Cloud Setup (REQUIRED)
+
+**Step 1: Create Jira Cloud**
+1. Go to [atlassian.com](https://atlassian.com) → **"Get Jira Cloud"**
+2. Create free account and workspace
+
+**Step 2: Create Project**
+1. Create new project with key **"PYRO"** (exactly this)
+2. **Save as**: `JIRA_PROJECT_KEY=PYRO`
+3. **Save as**: `JIRA_BASE_URL=https://your-domain.atlassian.net`
+
+**Step 3: Create API Token**
+1. Go to **Account Settings** → **"Security"** → **"API tokens"**
+2. **"Create API token"** → Name: `PyroGuard`
+3. Copy the token
+4. **Save as**: `JIRA_API_TOKEN=your_token_here`
+
+### 6. Inngest Setup (REQUIRED)
+
+**Step 1: Create Account**
+1. Go to [inngest.com](https://inngest.com) and sign up
+
+**Step 2: Create App**
+1. Create new app: **"PyroGuard Sentinel"**
+2. Go to **"Keys"** tab in dashboard
+3. Copy both keys:
+   - **Save as**: `INNGEST_EVENT_KEY=your_event_key`
+   - **Save as**: `INNGEST_SIGNING_KEY=your_signing_key`
+
+### 7. Complete Environment File
+
+Create `.env` file in project root with all credentials:
+
+```bash
+# AWS Configuration
+AWS_ACCESS_KEY_ID=AKIA_your_key_here
+AWS_SECRET_ACCESS_KEY=your_secret_key_here
+AWS_REGION=us-west-2
+AWS_REQUEST_PAYER=requester
+
+# AI Models
+ANTHROPIC_API_KEY=sk-ant-your_key_here
+CLARIFAI_PAT=clarifai_pat_your_token_here
+CLARIFAI_APP_ID=pyroguard-app
+CLARIFAI_USER_ID=your_username_here
+
+# Workflow & Automation
+INNGEST_EVENT_KEY=your_inngest_event_key
+INNGEST_SIGNING_KEY=your_inngest_signing_key
+MAKE_WEBHOOK_URL=https://hook.us2.make.com/your_webhook
+
+# Jira Integration
+JIRA_API_TOKEN=your_jira_token
+JIRA_BASE_URL=https://your-domain.atlassian.net
+JIRA_PROJECT_KEY=PYRO
+
+# Weather API
+NOAA_USER_AGENT="PyroGuard Sentinel (contact: your-email@domain.com)"
+
+# Development
+NODE_ENV=development
+NEXT_PUBLIC_API_URL=http://localhost:8080
+ENVIRONMENT=development
+```
+
+---
+
 ## 📋 Prerequisites
 
 ### Required Accounts & API Keys
@@ -81,8 +231,8 @@ This guide covers complete deployment of PyroGuard Sentinel, an AI-powered wildf
 Add these environment variables in Vercel project settings:
 
 ```bash
-# API Connection
-NEXT_PUBLIC_API_URL=https://pyroguard-api.onrender.com
+# API Connection (REQUIRED)
+NEXT_PUBLIC_API_URL=https://your-api-service.onrender.com
 
 # Optional: Analytics (if needed)
 NEXT_PUBLIC_ANALYTICS_ID=your_analytics_id
@@ -145,35 +295,40 @@ For both services:
 3. Select `pyroguard-cache`
 4. Mount Path: `/opt/pyroguard/data/cache`
 
-### Step 5: Environment Variables
+### Step 5: Environment Variables (COPY FROM YOUR .ENV)
 
-Add these environment variables to **both services**:
+Add these environment variables to **both services** (API and Worker):
 
 ```bash
-# AWS Configuration
-AWS_ACCESS_KEY_ID=AKIA...
-AWS_SECRET_ACCESS_KEY=...
+# AWS Configuration (REQUIRED)
+AWS_ACCESS_KEY_ID=AKIA_your_actual_key
+AWS_SECRET_ACCESS_KEY=your_actual_secret
 AWS_REGION=us-west-2
+AWS_REQUEST_PAYER=requester
 
-# AI/ML APIs
-CLARIFAI_PAT=your_clarifai_pat_token
-CLARIFAI_APP_ID=your_app_id
-CLARIFAI_USER_ID=your_username
-ANTHROPIC_API_KEY=sk-ant-...
+# AI/ML APIs (REQUIRED)
+CLARIFAI_PAT=clarifai_pat_your_actual_token
+CLARIFAI_APP_ID=pyroguard-app
+CLARIFAI_USER_ID=your_actual_username
+ANTHROPIC_API_KEY=sk-ant-your_actual_key
 
-# Job Processing
-INNGEST_EVENT_KEY=...
-INNGEST_SIGNING_KEY=...
+# Job Processing (REQUIRED)
+INNGEST_EVENT_KEY=your_actual_inngest_key
+INNGEST_SIGNING_KEY=your_actual_signing_key
 
-# Automation
-MAKE_WEBHOOK_URL=https://hook.integromat.com/...
+# Automation (REQUIRED)
+MAKE_WEBHOOK_URL=https://hook.us2.make.com/your_actual_webhook
 JIRA_PROJECT_KEY=PYRO
-JIRA_BASE_URL=https://your-org.atlassian.net
+JIRA_BASE_URL=https://your-actual-domain.atlassian.net
+JIRA_API_TOKEN=your_actual_jira_token
 
-# Weather API
-NOAA_USER_AGENT=PyroGuard Sentinel (contact: your-email@domain.com)
+# Weather API (REQUIRED)
+NOAA_USER_AGENT=PyroGuard Sentinel (contact: your-actual-email@domain.com)
 
-# Optional: Debugging
+# System Configuration
+PORT=8080
+PYTHONPATH=/app
+ENVIRONMENT=production
 LOG_LEVEL=INFO
 ```
 
@@ -183,6 +338,14 @@ LOG_LEVEL=INFO
 1. Settings → "Health Check"
 2. **Health Check Path**: `/health`
 3. **Expected Status**: 200
+
+### Step 7: Update Frontend API URL
+
+After API is deployed:
+1. Copy your Render API service URL (e.g., `https://pyroguard-api-abc123.onrender.com`)
+2. Go to Vercel project → Settings → Environment Variables
+3. Update `NEXT_PUBLIC_API_URL=https://your-actual-api-url.onrender.com`
+4. **Redeploy** frontend in Vercel
 
 ---
 
@@ -256,7 +419,7 @@ cd apps/web; npm run dev     # Terminal 2
 docker build -f infra/docker/api.Dockerfile -t pyroguard-api .
 docker build -f infra/docker/worker.Dockerfile -t pyroguard-worker .
 
-docker run -p 8082:8082 --env-file .env pyroguard-api
+docker run -p 8080:8080 --env-file .env pyroguard-api
 docker run --env-file .env pyroguard-worker
 ```
 
