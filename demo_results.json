@@ -1,11 +1,11 @@
 {
-  "timestamp": "2025-05-30T12:42:44.660474",
+  "timestamp": "2025-05-30T12:52:08.667708",
   "demo_results": {
     "health": {
-      "status": "healthy",
+      "status": "degraded",
       "timestamp": "2025-01-30T12:00:00Z",
       "services": {
-        "clarifai": "connection_failed",
+        "clarifai": "error",
         "anthropic": "healthy",
         "aws_s3": "healthy",
         "noaa_weather": "healthy",
@@ -34,8 +34,8 @@
       }
     },
     "analysis_demo_mode": {
-      "analysis_id": "70279268-9700-45ed-9b96-9a40580e1632",
-      "total_time": 13.991550207138062,
+      "analysis_id": "89ccaa64-1203-4f1c-85b1-e2435f33964e",
+      "total_time": 5.300652503967285,
       "target_time": 5,
       "phases_completed": 1,
       "result_data": {
@@ -48,15 +48,15 @@
         "power_lines": {},
         "satellite": {},
         "risk_assessment": {},
-        "jira_ticket_url": "https://nalamaui30.atlassian.net/browse/PYRO-458",
-        "processing_time_seconds": 4.674477,
+        "jira_ticket_url": "https://nalamaui30.atlassian.net/browse/PYRO-974",
+        "processing_time_seconds": 4.828782,
         "status": "completed",
         "error_message": null
       }
     },
     "analysis_live_mode": {
-      "analysis_id": "86398e0d-5d2f-4d94-9d96-f4bf4a22ae3a",
-      "total_time": 17.793678522109985,
+      "analysis_id": "59eac05f-0f6d-4c69-af6e-8e35ab2e2d4e",
+      "total_time": 17.08684277534485,
       "target_time": 20,
       "phases_completed": 1,
       "result_data": {
@@ -69,8 +69,8 @@
         "power_lines": {},
         "satellite": {},
         "risk_assessment": {},
-        "jira_ticket_url": "https://nalamaui30.atlassian.net/browse/PYRO-768",
-        "processing_time_seconds": 17.341972,
+        "jira_ticket_url": "https://nalamaui30.atlassian.net/browse/PYRO-388",
+        "processing_time_seconds": 16.6184,
         "status": "completed",
         "error_message": null
       }
@@ -84,12 +84,12 @@
   },
   "timing_benchmarks": {
     "demo_mode": {
-      "actual_time": 13.991550207138062,
+      "actual_time": 5.300652503967285,
       "target_time": 5,
       "meets_target": false
     },
     "live_mode": {
-      "actual_time": 17.793678522109985,
+      "actual_time": 17.08684277534485,
       "target_time": 20,
       "meets_target": true
     }
@@ -98,7 +98,7 @@
     "total_integrations": 6,
     "operational_count": 5,
     "services": {
-      "clarifai": "connection_failed",
+      "clarifai": "error",
       "anthropic": "healthy",
       "aws_s3": "healthy",
       "noaa_weather": "healthy",
