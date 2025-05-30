@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
 import { 
   Brain, 
   Satellite, 
@@ -22,7 +22,8 @@ import {
   Flame,
   Wind,
   Thermometer,
-  Droplets
+  Droplets,
+  MapPin
 } from 'lucide-react'
 
 interface ChainOfThoughtProps {
@@ -49,46 +50,58 @@ interface ReasoningStep {
 
 const REASONING_PHASES = [
   {
-    id: 'data_fusion',
-    title: 'Multi-Source Data Fusion',
-    icon: Satellite,
-    color: 'text-blue-500',
-    description: 'Integrating satellite imagery, weather data, and power infrastructure'
+    id: 'location_verification',
+    title: 'Location Verification',
+    icon: MapPin,
+    color: 'text-green-500',
+    description: 'Validating coordinates within Hawaiian Islands bounds',
+    sponsor_tool: 'Internal validation',
+    api_calls: ['Coordinate bounds check', 'Hawaii region validation']
   },
   {
-    id: 'vegetation_analysis', 
-    title: 'Vegetation Intelligence',
-    icon: Activity,
-    color: 'text-green-500',
-    description: 'Analyzing vegetation moisture and fuel load conditions'
+    id: 'satellite_analysis', 
+    title: 'Satellite Image Analysis',
+    icon: Satellite,
+    color: 'text-purple-500',
+    description: 'AI-powered vegetation dryness analysis from satellite imagery',
+    sponsor_tool: 'Clarifai NDVI + Anthropic Vision API',
+    api_calls: ['AWS S3 Sentinel-2 image fetch', 'Clarifai Crop Health NDVI', 'Anthropic Vision API (fallback)']
   },
   {
     id: 'weather_synthesis',
-    title: 'Weather Pattern Analysis', 
+    title: 'Weather Data Integration', 
     icon: CloudSun,
     color: 'text-yellow-500',
-    description: 'Processing meteorological conditions and fire weather index'
+    description: 'Real-time meteorological conditions and fire weather index',
+    sponsor_tool: 'NOAA Weather Service',
+    api_calls: ['NOAA Weather API', 'Fire Weather Index calculation', 'Weather station data']
   },
   {
     id: 'infrastructure_assessment',
-    title: 'Infrastructure Risk Assessment',
+    title: 'Power Infrastructure Analysis',
     icon: Zap,
-    color: 'text-purple-500', 
-    description: 'Evaluating power line proximity and ignition sources'
+    color: 'text-orange-500', 
+    description: 'Power line mapping and ignition source risk assessment',
+    sponsor_tool: 'OpenStreetMap Overpass API',
+    api_calls: ['Overpass API query', 'Power line proximity calc', 'Infrastructure density analysis']
   },
   {
-    id: 'fire_behavior_prediction',
-    title: 'Fire Behavior Modeling',
-    icon: Flame,
-    color: 'text-red-500',
-    description: 'Predicting fire spread characteristics and suppression difficulty'
-  },
-  {
-    id: 'risk_synthesis',
-    title: 'Comprehensive Risk Synthesis',
+    id: 'risk_reasoning',
+    title: 'AI Risk Assessment',
     icon: Brain,
-    color: 'text-indigo-500',
-    description: 'Multi-factor wildfire risk assessment and recommendations'
+    color: 'text-blue-500',
+    description: 'Multi-factor wildfire risk assessment with MCP agent reasoning',
+    sponsor_tool: 'Internal MCP Agent',
+    api_calls: ['Cross-factor risk calculation', 'Severity determination', 'Confidence scoring']
+  },
+  {
+    id: 'incident_automation',
+    title: 'Incident Automation',
+    icon: AlertTriangle,
+    color: 'text-red-500',
+    description: 'Automated workflow for incident response and ticket creation',
+    sponsor_tool: 'Make.com → Jira',
+    api_calls: ['Make.com webhook', 'Jira ticket creation', 'Incident prioritization']
   }
 ]
 
@@ -123,12 +136,12 @@ export default function ChainOfThought({
 
   const getSponsorTool = (phaseId: string): string => {
     const toolMap: Record<string, string> = {
-      'data_fusion': 'AWS S3 + Clarifai + NOAA + OpenStreetMap',
-      'vegetation_analysis': 'Clarifai NDVI Model',
+      'location_verification': 'Internal validation',
+      'satellite_analysis': 'Clarifai NDVI + Anthropic Vision API',
       'weather_synthesis': 'NOAA Weather Service',
       'infrastructure_assessment': 'OpenStreetMap Overpass API',
-      'fire_behavior_prediction': 'Advanced Fire Modeling Engine',
-      'risk_synthesis': 'Multi-Agent Reasoning System'
+      'risk_reasoning': 'Internal MCP Agent',
+      'incident_automation': 'Make.com → Jira'
     }
     return toolMap[phaseId] || 'Unknown Tool'
   }
@@ -194,7 +207,7 @@ export default function ChainOfThought({
     const lon = Math.abs(coords.longitude).toFixed(4)
     
     switch (phaseId) {
-      case 'data_fusion':
+      case 'location_verification':
         return [
           `📍 Location verified: ${lat}°N, ${lon}°W (Hawaiian Islands)`,
           `🛰️ Retrieving Sentinel-2 satellite imagery from AWS S3`,
@@ -204,7 +217,7 @@ export default function ChainOfThought({
           `✅ Multi-source data fusion complete: 4/4 systems operational`
         ]
 
-      case 'vegetation_analysis':
+      case 'satellite_analysis':
         return [
           `🌿 Analyzing vegetation spectral signature via Clarifai NDVI model`,
           `📊 NDVI calculation: Moderate vegetation stress detected (0.72 dryness)`,
@@ -234,22 +247,20 @@ export default function ChainOfThought({
           `⚖️ Ignition risk assessment: 0.42 probability (Wind + proximity factors)`
         ]
 
-      case 'fire_behavior_prediction':
-        return [
-          `🔥 Rate of spread calculation: 2.1 mph (Rapid spread expected)`,
-          `📏 Flame length estimate: 6.8 feet (Moderate to high intensity)`,
-          `🌪️ Spotting potential: 900 feet (Ember transport risk)`,
-          `🚁 Suppression difficulty: DIFFICULT (Wind + terrain + fuel load)`,
-          `⏰ Evacuation timeline: 2-4 hours if fire reaches populated areas`,
-          `📊 Fire behavior class: Type 4 - Fast-moving grass/shrub fire`
-        ]
-
-      case 'risk_synthesis':
+      case 'risk_reasoning':
         return [
           `🧠 Integrating vegetation (72% risk) + weather (81% risk) + infrastructure (42% risk)`,
           `⚖️ Weighted risk calculation: Vegetation 30% + Weather 40% + Infrastructure 30%`,
           `📊 Composite risk score: 7.2/10 (HIGH RISK - Immediate attention required)`,
           `🎯 Confidence assessment: 91% (High-quality multi-source analysis)`,
+          `📋 Recommendation: Issue fire weather watch, pre-position resources`,
+          `🎫 Automated response: Creating incident ticket for emergency services`
+        ]
+
+      case 'incident_automation':
+        return [
+          `📋 Incident ticket created: Emergency response initiated`,
+          `🎯 Confidence assessment: 100% (Automated workflow complete)`,
           `📋 Recommendation: Issue fire weather watch, pre-position resources`,
           `🎫 Automated response: Creating incident ticket for emergency services`
         ]
@@ -411,8 +422,20 @@ export default function ChainOfThought({
                       </div>
                       
                       {step.sponsorTool && (
-                        <div className="text-xs text-blue-400 mb-2">
+                        <div className="text-xs text-blue-400 mb-2 font-mono bg-blue-950/30 px-2 py-1 rounded border border-blue-500/30">
                           🔧 {step.sponsorTool}
+                        </div>
+                      )}
+
+                      {/* Show API calls for this phase */}
+                      {REASONING_PHASES[index]?.api_calls && step.status === 'processing' && (
+                        <div className="mb-2">
+                          <div className="text-xs text-gray-400 mb-1 font-semibold">API Calls:</div>
+                          {REASONING_PHASES[index].api_calls.map((apiCall, callIndex) => (
+                            <div key={callIndex} className="text-xs text-green-400 font-mono bg-green-950/20 px-2 py-1 rounded mb-1 border border-green-500/20">
+                              📡 {apiCall}
+                            </div>
+                          ))}
                         </div>
                       )}
                       

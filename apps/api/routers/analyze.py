@@ -4,6 +4,7 @@ import logging
 import asyncio
 from datetime import datetime
 from typing import Dict, Any, Optional
+import json
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
@@ -530,7 +531,12 @@ async def get_analysis_progress(analysis_id: str):
         """Generate Server-Sent Events for progress updates"""
         try:
             # Send initial connection event
-            yield f"data: {{'type': 'connected', 'analysis_id': '{analysis_id}', 'timestamp': '{datetime.now().isoformat()}'}}\n\n"
+            connection_data = {
+                "type": "connected", 
+                "analysis_id": analysis_id, 
+                "timestamp": datetime.now().isoformat()
+            }
+            yield f"data: {json.dumps(connection_data)}\n\n"
             
             # Monitor analysis progress with enhanced details
             max_iterations = 120  # 60 seconds at 0.5s intervals
@@ -594,12 +600,17 @@ async def get_analysis_progress(analysis_id: str):
                         if hasattr(result, 'jira_ticket_url') and result.jira_ticket_url:
                             progress_data["jira_ticket_url"] = result.jira_ticket_url
                         
-                        yield f"data: {progress_data}\n\n"
+                        yield f"data: {json.dumps(progress_data)}\n\n"
                         last_status = current_status
                     
                     # Check if analysis is complete
                     if result.status in ["completed", "failed"]:
-                        yield f"data: {{'type': 'complete', 'status': '{result.status}', 'timestamp': '{datetime.now().isoformat()}'}}\n\n"
+                        complete_data = {
+                            "type": "complete", 
+                            "status": result.status, 
+                            "timestamp": datetime.now().isoformat()
+                        }
+                        yield f"data: {json.dumps(complete_data)}\n\n"
                         break
                 
                 # Wait before next update
@@ -608,11 +619,21 @@ async def get_analysis_progress(analysis_id: str):
             
             # Send timeout if we reach max iterations
             if iteration >= max_iterations:
-                yield f"data: {{'type': 'timeout', 'message': 'Analysis taking longer than expected', 'timestamp': '{datetime.now().isoformat()}'}}\n\n"
+                timeout_data = {
+                    "type": "timeout", 
+                    "message": "Analysis taking longer than expected", 
+                    "timestamp": datetime.now().isoformat()
+                }
+                yield f"data: {json.dumps(timeout_data)}\n\n"
         
         except Exception as e:
             logger.error(f"Progress streaming error: {str(e)}")
-            yield f"data: {{'type': 'error', 'message': 'Progress streaming failed', 'timestamp': '{datetime.now().isoformat()}'}}\n\n"
+            error_data = {
+                "type": "error", 
+                "message": "Progress streaming failed", 
+                "timestamp": datetime.now().isoformat()
+            }
+            yield f"data: {json.dumps(error_data)}\n\n"
     
     return StreamingResponse(
         generate_progress_updates(),

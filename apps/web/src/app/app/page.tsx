@@ -37,6 +37,18 @@ const MapComponent = dynamic(() => import('../../components/MapComponent'), {
   )
 })
 
+const ChainOfThought = dynamic(() => import('@/components/ChainOfThought'), { 
+  ssr: false,
+  loading: () => (
+    <div className="w-72 h-40 bg-slate-800/50 border border-slate-600/50 rounded-lg flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+        <p className="text-slate-400 text-sm">Loading reasoning...</p>
+      </div>
+    </div>
+  )
+})
+
 interface AnalysisData {
   analysis_id: string
   status: string
@@ -470,6 +482,17 @@ export default function App() {
             currentAnalysis={currentAnalysis}
             demoLocations={demoLocations}
           />
+
+          {/* Chain of Thought Reasoning - Shows API calls and reasoning */}
+          {currentAnalysis && (
+            <div className="absolute top-4 left-4 z-[1000] max-w-sm">
+              <ChainOfThought 
+                analysisId={currentAnalysis.analysis_id}
+                coordinates={currentAnalysis.coordinates}
+                realTime={true}
+              />
+            </div>
+          )}
 
           {/* Map Instructions Overlay */}
           {!currentAnalysis && !isAnalyzing && (
