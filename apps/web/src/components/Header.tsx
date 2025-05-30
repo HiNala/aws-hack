@@ -1,5 +1,5 @@
 import React from 'react'
-import { MapPin, Activity, Wifi, WifiOff } from 'lucide-react'
+import { MapPin, Activity, Wifi, WifiOff, LogOut } from 'lucide-react'
 
 interface AnalysisData {
   analysis_id: string
@@ -16,9 +16,10 @@ interface HeaderProps {
   onDemoModeToggle: (enabled: boolean) => void
   connectionStatus: 'connecting' | 'connected' | 'error'
   currentAnalysis: AnalysisData | null
+  onLogout?: () => void
 }
 
-export default function Header({ demoMode, onDemoModeToggle, connectionStatus, currentAnalysis }: HeaderProps) {
+export default function Header({ demoMode, onDemoModeToggle, connectionStatus, currentAnalysis, onLogout }: HeaderProps) {
   const getRiskColor = (severity: string) => {
     switch (severity) {
       case 'LOW': return 'text-green-400'
@@ -116,6 +117,18 @@ export default function Header({ demoMode, onDemoModeToggle, connectionStatus, c
              'Offline'}
           </span>
         </div>
+
+        {/* Logout Button */}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Logout</span>
+          </button>
+        )}
       </div>
     </header>
   )
