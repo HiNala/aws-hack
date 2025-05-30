@@ -390,10 +390,17 @@ async def test_all_integrations():
 
 
 if __name__ == "__main__":
+    import uvicorn
+    
+    # Load environment variables
+    load_dotenv()
+    
+    logger.info("🔥 Starting PyroGuard Sentinel API...")
+    
     uvicorn.run(
-        "main_simple:app",
+        "apps.api.main_simple:app",
         host="0.0.0.0",
-        port=8081,
+        port=8082,
         reload=True,
         log_level="info"
     ) 

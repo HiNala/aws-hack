@@ -11,7 +11,7 @@ import httpx
 
 from apps.shared.models.risk_inputs import AnalysisRequest, AnalysisResult, WorkerEvent
 from apps.shared.utils.satellite_client import is_in_hawaii, get_satellite_image_bytes
-from apps.shared.utils.satellite_analysis import analyze_satellite_image, test_satellite_analysis_systems
+from apps.shared.utils.satellite_analysis import analyze_with_clarifai, test_satellite_analysis_systems
 from apps.shared.utils.weather_client import get_weather_data, test_noaa_connection
 from apps.shared.utils.overpass_client import get_power_line_data, create_demo_power_data
 from apps.shared.utils.make_webhook import send_wildfire_analysis_to_make, test_make_webhook
@@ -111,7 +111,7 @@ async def run_comprehensive_analysis_pipeline(analysis_id: str, request: Analysi
         
         if satellite_result:
             analysis_results[analysis_id].satellite = type('obj', (object,), satellite_result)()
-            logger.info(f"🛰️ Phase 2: Satellite analysis complete - dryness {satellite_result['dryness_score']:.2f} ({satellite_result['analysis_method']})")
+            logger.info(f"🛰️ Phase 2: Satellite analysis complete - dryness {satellite_result['dryness_score']:.2f}")
         else:
             # Fallback to demo data
             satellite_result = {
@@ -192,8 +192,7 @@ async def run_comprehensive_analysis_pipeline(analysis_id: str, request: Analysi
                     "weather": analysis_results[analysis_id].weather,
                     "power_lines": analysis_results[analysis_id].power_lines,
                     "risk_assessment": analysis_results[analysis_id].risk_assessment,
-                    "processing_time_seconds": (datetime.now() - start_time).total_seconds(),
-                    "analysis_method": satellite_result.get("analysis_method", "unknown")
+                    "processing_time_seconds": (datetime.now() - start_time).total_seconds()
                 }
                 
                 # Send to Make.com webhook for Jira ticket creation
@@ -231,23 +230,23 @@ async def run_comprehensive_analysis_pipeline(analysis_id: str, request: Analysi
 
 async def analyze_satellite_imagery(latitude: float, longitude: float, demo_mode: bool) -> Optional[Dict[str, Any]]:
     """
-    Analyze satellite imagery using Clarifai + Anthropic fallback
+    Analyze satellite imagery using Clarifai + enhanced analysis
     """
     try:
         if demo_mode:
             # Use demo mode for faster processing
-            return await analyze_satellite_image(None, {"latitude": latitude, "longitude": longitude}, demo_mode=True)
+            return await analyze_with_clarifai(None, {"latitude": latitude, "longitude": longitude}, demo_mode=True)
         
         # Get satellite image for the coordinates
         image_data = get_satellite_image_bytes(latitude, longitude)
         
         if image_data:
             logger.info(f"📡 Got {len(image_data)} bytes of satellite imagery")
-            # Analyze with Clarifai + Anthropic fallback
-            return await analyze_satellite_image(image_data, {"latitude": latitude, "longitude": longitude}, demo_mode=False)
+            # Analyze with enhanced Clarifai analysis
+            return await analyze_with_clarifai(image_data, {"latitude": latitude, "longitude": longitude}, demo_mode=False)
         else:
             logger.warning("📡 No satellite imagery available, using demo mode")
-            return await analyze_satellite_image(None, {"latitude": latitude, "longitude": longitude}, demo_mode=True)
+            return await analyze_with_clarifai(None, {"latitude": latitude, "longitude": longitude}, demo_mode=True)
             
     except Exception as e:
         logger.error(f"❌ Satellite imagery analysis failed: {str(e)}")

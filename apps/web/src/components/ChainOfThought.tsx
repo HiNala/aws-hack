@@ -1,300 +1,467 @@
-import React, { useState, useEffect } from 'react'
-import { Brain, Zap, CheckCircle, AlertTriangle, Info, Clock, TrendingUp, Eye, Cpu, Activity, Target, FileText, Database, CloudRain, Satellite, MapPin } from 'lucide-react'
+'use client'
+
+import React, { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { 
+  Brain, 
+  Satellite, 
+  CloudSun, 
+  Zap, 
+  TrendingUp, 
+  AlertTriangle,
+  CheckCircle,
+  Play,
+  Pause,
+  RotateCcw,
+  ChevronDown,
+  ChevronRight,
+  Activity,
+  Flame,
+  Wind,
+  Thermometer,
+  Droplets
+} from 'lucide-react'
+
+interface ChainOfThoughtProps {
+  analysisId: string
+  coordinates: { latitude: number; longitude: number }
+  realTime?: boolean
+  className?: string
+}
 
 interface ReasoningStep {
   id: string
-  timestamp: string
-  category: 'data_fusion' | 'analysis' | 'risk_assessment' | 'decision' | 'validation'
+  phase: string
   title: string
-  description: string
+  status: 'pending' | 'processing' | 'complete' | 'error'
   confidence: number
+  details: string[]
+  sponsorTool?: string
   data?: any
-  status: 'processing' | 'complete' | 'warning' | 'error'
-  reasoning: string
-  next_steps?: string[]
+  processing_time?: number
+  timestamp: Date
+  reasoning?: string
+  critical_factors?: string[]
 }
 
-interface ChainOfThoughtProps {
-  analysisId?: string
-  coordinates?: { latitude: number; longitude: number }
-  realTime?: boolean
-}
+const REASONING_PHASES = [
+  {
+    id: 'data_fusion',
+    title: 'Multi-Source Data Fusion',
+    icon: Satellite,
+    color: 'text-blue-500',
+    description: 'Integrating satellite imagery, weather data, and power infrastructure'
+  },
+  {
+    id: 'vegetation_analysis', 
+    title: 'Vegetation Intelligence',
+    icon: Activity,
+    color: 'text-green-500',
+    description: 'Analyzing vegetation moisture and fuel load conditions'
+  },
+  {
+    id: 'weather_synthesis',
+    title: 'Weather Pattern Analysis', 
+    icon: CloudSun,
+    color: 'text-yellow-500',
+    description: 'Processing meteorological conditions and fire weather index'
+  },
+  {
+    id: 'infrastructure_assessment',
+    title: 'Infrastructure Risk Assessment',
+    icon: Zap,
+    color: 'text-purple-500', 
+    description: 'Evaluating power line proximity and ignition sources'
+  },
+  {
+    id: 'fire_behavior_prediction',
+    title: 'Fire Behavior Modeling',
+    icon: Flame,
+    color: 'text-red-500',
+    description: 'Predicting fire spread characteristics and suppression difficulty'
+  },
+  {
+    id: 'risk_synthesis',
+    title: 'Comprehensive Risk Synthesis',
+    icon: Brain,
+    color: 'text-indigo-500',
+    description: 'Multi-factor wildfire risk assessment and recommendations'
+  }
+]
 
-const ChainOfThought: React.FC<ChainOfThoughtProps> = ({ 
+export default function ChainOfThought({ 
   analysisId, 
   coordinates, 
-  realTime = true 
-}) => {
+  realTime = true, 
+  className = "" 
+}: ChainOfThoughtProps) {
   const [reasoningSteps, setReasoningSteps] = useState<ReasoningStep[]>([])
-  const [currentPhase, setCurrentPhase] = useState<string>('initializing')
-  const [isActive, setIsActive] = useState(false)
+  const [isActive, setIsActive] = useState(realTime)
+  const [currentPhase, setCurrentPhase] = useState(0)
+  const [isExpanded, setIsExpanded] = useState(true)
+  const [autoScroll, setAutoScroll] = useState(true)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Simulate real-time MCP reasoning
-  useEffect(() => {
-    if (!analysisId || !isActive) return
+  const initializeReasoning = () => {
+    const initialSteps: ReasoningStep[] = REASONING_PHASES.map((phase, index) => ({
+      id: phase.id,
+      phase: phase.id,
+      title: phase.title,
+      status: index === 0 ? 'processing' : 'pending',
+      confidence: 0,
+      details: [`Initializing ${phase.description.toLowerCase()}...`],
+      timestamp: new Date(),
+      sponsorTool: getSponsorTool(phase.id)
+    }))
+    
+    setReasoningSteps(initialSteps)
+    setCurrentPhase(0)
+  }
 
-    const simulateReasoning = () => {
-      const steps: ReasoningStep[] = [
-        {
-          id: '1',
-          timestamp: new Date().toISOString(),
-          category: 'data_fusion',
-          title: '🗺️ Location Context Analysis',
-          description: 'Analyzing geographic coordinates for Hawaii wildfire risk factors',
-          confidence: 0.95,
-          status: 'complete',
-          reasoning: `Coordinates ${coordinates?.latitude}, ${coordinates?.longitude} confirmed within Maui County. Cross-referencing with historical fire incident database shows this area has 3 documented wildfire events in past 5 years. Elevation: ~2,847ft, vegetation type: mixed grassland with invasive species.`,
-          data: {
-            county: 'Maui',
-            elevation_ft: 2847,
-            historical_fires: 3,
-            vegetation: 'mixed_grassland'
-          }
-        },
-        {
-          id: '2', 
-          timestamp: new Date(Date.now() + 1000).toISOString(),
-          category: 'data_fusion',
-          title: '🛰️ Satellite Image Intelligence',
-          description: 'Processing Sentinel-2 L2A imagery from AWS Registry of Open Data',
-          confidence: 0.88,
-          status: 'complete',
-          reasoning: 'Sentinel-2 tile T04QFJ captured 2 days ago shows NDVI values indicating stressed vegetation. Moisture content analysis reveals 68% below normal for this season. Thermal bands show surface temperatures 4.2°C above historical average.',
-          data: {
-            tile_id: 'T04QFJ',
-            ndvi_avg: 0.23,
-            moisture_deficit: '68%',
-            temp_anomaly: '+4.2°C'
-          }
-        },
-        {
-          id: '3',
-          timestamp: new Date(Date.now() + 2000).toISOString(), 
-          category: 'data_fusion',
-          title: '🌤️ Meteorological Conditions',
-          description: 'Integrating NOAA weather data and fire weather indices',
-          confidence: 0.92,
-          status: 'complete',
-          reasoning: 'Current conditions: 26.4 mph sustained winds from NE (concerning direction for fire spread). Relative humidity at 35% (critical threshold <40%). No precipitation forecast for 72+ hours. Fire Weather Index: EXTREME (95/100).',
-          data: {
-            wind_speed_mph: 26.4,
-            wind_direction: 'NE',
-            humidity_percent: 35,
-            fire_weather_index: 95
-          }
-        },
-        {
-          id: '4',
-          timestamp: new Date(Date.now() + 3000).toISOString(),
-          category: 'analysis',
-          title: '⚡ Power Infrastructure Risk',
-          description: 'Analyzing proximity to electrical transmission systems',
-          confidence: 0.85,
-          status: 'complete', 
-          reasoning: 'OpenStreetMap data reveals 3 major transmission lines within 500m radius. Nearest line: 230m distance, 46kV rating. Historical data shows 67% of Maui wildfires originated near power infrastructure. Wind direction analysis indicates potential arc/equipment failure could ignite downwind vegetation.',
-          data: {
-            transmission_lines: 3,
-            nearest_distance_m: 230,
-            voltage_rating: '46kV',
-            ignition_probability: 0.67
-          }
-        },
-        {
-          id: '5',
-          timestamp: new Date(Date.now() + 4000).toISOString(),
-          category: 'risk_assessment',
-          title: '🧠 Multi-Factor Risk Synthesis',
-          description: 'Integrating all data sources using weighted risk algorithms',
-          confidence: 0.91,
-          status: 'complete',
-          reasoning: 'Risk matrix calculation: Vegetation stress (HIGH) × Wind conditions (EXTREME) × Infrastructure proximity (HIGH) × Historical patterns (MODERATE) = SEVERE RISK (8.7/10). Primary concern: Equipment failure during high wind event with immediate ignition of dry vegetation and rapid NE wind-driven spread.',
-          data: {
-            vegetation_risk: 'HIGH',
-            weather_risk: 'EXTREME', 
-            infrastructure_risk: 'HIGH',
-            composite_score: 8.7,
-            primary_scenario: 'equipment_failure_wind_driven'
-          }
-        },
-        {
-          id: '6',
-          timestamp: new Date(Date.now() + 5000).toISOString(),
-          category: 'decision',
-          title: '🎯 Automated Response Triggering',
-          description: 'Activating incident management protocols via Make.com → Jira integration',
-          confidence: 0.97,
-          status: 'complete',
-          reasoning: 'Risk threshold exceeded (8.7 > 7.0 trigger level). Automated incident ticket creation initiated. Recommended actions: (1) Increase power line monitoring, (2) Pre-position fire resources, (3) Community alert notification, (4) Vegetation management review.',
-          next_steps: [
-            'Power utility notification sent',
-            'Fire department alert triggered', 
-            'Community notification queued',
-            'Resource pre-positioning recommended'
-          ]
-        }
-      ]
+  const getSponsorTool = (phaseId: string): string => {
+    const toolMap: Record<string, string> = {
+      'data_fusion': 'AWS S3 + Clarifai + NOAA + OpenStreetMap',
+      'vegetation_analysis': 'Clarifai NDVI Model',
+      'weather_synthesis': 'NOAA Weather Service',
+      'infrastructure_assessment': 'OpenStreetMap Overpass API',
+      'fire_behavior_prediction': 'Advanced Fire Modeling Engine',
+      'risk_synthesis': 'Multi-Agent Reasoning System'
+    }
+    return toolMap[phaseId] || 'Unknown Tool'
+  }
 
-      steps.forEach((step, index) => {
-        setTimeout(() => {
-          setReasoningSteps(prev => [...prev, step])
-          setCurrentPhase(step.category)
-          
-          // Auto-scroll to bottom
-          setTimeout(() => {
-            const element = document.getElementById('reasoning-container')
-            if (element) {
-              element.scrollTop = element.scrollHeight
-            }
-          }, 100)
-        }, index * (realTime ? 2000 : 500))
+  const updateReasoningStep = (phaseId: string, updates: Partial<ReasoningStep>) => {
+    setReasoningSteps(prev => prev.map(step => 
+      step.id === phaseId ? { ...step, ...updates, timestamp: new Date() } : step
+    ))
+  }
+
+  const simulateAdvancedReasoning = async () => {
+    if (!isActive) return
+
+    for (let i = 0; i < REASONING_PHASES.length; i++) {
+      const phase = REASONING_PHASES[i]
+      setCurrentPhase(i)
+
+      // Start processing phase
+      updateReasoningStep(phase.id, {
+        status: 'processing',
+        details: [`🔄 Initiating ${phase.description.toLowerCase()}...`]
       })
-    }
 
-    simulateReasoning()
-  }, [analysisId, isActive, realTime, coordinates])
+      await new Promise(resolve => setTimeout(resolve, 800))
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'data_fusion': return <Database className="w-4 h-4" />
-      case 'analysis': return <Eye className="w-4 h-4" />
-      case 'risk_assessment': return <TrendingUp className="w-4 h-4" />
-      case 'decision': return <Target className="w-4 h-4" />
-      case 'validation': return <CheckCircle className="w-4 h-4" />
-      default: return <Brain className="w-4 h-4" />
+      // Simulate detailed reasoning for each phase
+      await simulatePhaseReasoning(phase.id, i)
+
+      // Complete phase
+      updateReasoningStep(phase.id, {
+        status: 'complete',
+        confidence: 0.85 + Math.random() * 0.12
+      })
+
+      await new Promise(resolve => setTimeout(resolve, 300))
+
+      // Start next phase
+      if (i < REASONING_PHASES.length - 1) {
+        updateReasoningStep(REASONING_PHASES[i + 1].id, {
+          status: 'processing'
+        })
+      }
     }
+  }
+
+  const simulatePhaseReasoning = async (phaseId: string, phaseIndex: number) => {
+    const reasoningData = getPhaseReasoningData(phaseId, coordinates)
+    
+    for (let step = 0; step < reasoningData.length; step++) {
+      if (!isActive) break
+      
+      updateReasoningStep(phaseId, {
+        details: reasoningData.slice(0, step + 1),
+        confidence: Math.min(0.95, 0.60 + (step / reasoningData.length) * 0.35)
+      })
+      
+      await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 400))
+    }
+  }
+
+  const getPhaseReasoningData = (phaseId: string, coords: { latitude: number; longitude: number }): string[] => {
+    const lat = coords.latitude.toFixed(4)
+    const lon = Math.abs(coords.longitude).toFixed(4)
+    
+    switch (phaseId) {
+      case 'data_fusion':
+        return [
+          `📍 Location verified: ${lat}°N, ${lon}°W (Hawaiian Islands)`,
+          `🛰️ Retrieving Sentinel-2 satellite imagery from AWS S3`,
+          `🌤️ Fetching current weather conditions from NOAA Weather Service`,
+          `⚡ Querying power infrastructure from OpenStreetMap database`,
+          `🔗 Cross-referencing data sources for temporal alignment`,
+          `✅ Multi-source data fusion complete: 4/4 systems operational`
+        ]
+
+      case 'vegetation_analysis':
+        return [
+          `🌿 Analyzing vegetation spectral signature via Clarifai NDVI model`,
+          `📊 NDVI calculation: Moderate vegetation stress detected (0.72 dryness)`,
+          `🔥 Fuel moisture estimation: 12.3% (Below critical threshold of 15%)`,
+          `🌱 Vegetation type classification: Stressed shrubland ecosystem`,
+          `⚠️ Fire susceptibility: HIGH - Low moisture content increases ignition risk`,
+          `🎯 Confidence assessment: 94% (High-quality satellite data)`
+        ]
+
+      case 'weather_synthesis':
+        return [
+          `🌡️ Temperature analysis: 82°F (Above fire weather threshold)`,
+          `💨 Wind conditions: 18 mph from northeast (Elevated fire spread risk)`,
+          `💧 Relative humidity: 31% (Below safe threshold of 60%)`,
+          `☀️ Weather pattern: Dry conditions with clear skies`,
+          `📈 Fire Weather Index: 7.2/10 (HIGH - Critical fire weather conditions)`,
+          `🚨 Red Flag conditions present: High temperature, low humidity, strong winds`
+        ]
+
+      case 'infrastructure_assessment':
+        return [
+          `🔍 Power infrastructure scan: 500m radius analysis`,
+          `⚡ Power lines detected: 3 transmission lines within assessment area`,
+          `📏 Proximity analysis: Nearest line at 230m (MODERATE risk distance)`,
+          `🏗️ Infrastructure density: Medium (3 lines per km²)`,
+          `💨 Wind-power interaction: 18 mph winds increase arcing potential`,
+          `⚖️ Ignition risk assessment: 0.42 probability (Wind + proximity factors)`
+        ]
+
+      case 'fire_behavior_prediction':
+        return [
+          `🔥 Rate of spread calculation: 2.1 mph (Rapid spread expected)`,
+          `📏 Flame length estimate: 6.8 feet (Moderate to high intensity)`,
+          `🌪️ Spotting potential: 900 feet (Ember transport risk)`,
+          `🚁 Suppression difficulty: DIFFICULT (Wind + terrain + fuel load)`,
+          `⏰ Evacuation timeline: 2-4 hours if fire reaches populated areas`,
+          `📊 Fire behavior class: Type 4 - Fast-moving grass/shrub fire`
+        ]
+
+      case 'risk_synthesis':
+        return [
+          `🧠 Integrating vegetation (72% risk) + weather (81% risk) + infrastructure (42% risk)`,
+          `⚖️ Weighted risk calculation: Vegetation 30% + Weather 40% + Infrastructure 30%`,
+          `📊 Composite risk score: 7.2/10 (HIGH RISK - Immediate attention required)`,
+          `🎯 Confidence assessment: 91% (High-quality multi-source analysis)`,
+          `📋 Recommendation: Issue fire weather watch, pre-position resources`,
+          `🎫 Automated response: Creating incident ticket for emergency services`
+        ]
+
+      default:
+        return [`Processing ${phaseId}...`]
+    }
+  }
+
+  const handleToggleReasoning = () => {
+    setIsActive(!isActive)
+    if (!isActive) {
+      initializeReasoning()
+      simulateAdvancedReasoning()
+    }
+  }
+
+  const handleRestart = () => {
+    setIsActive(false)
+    setCurrentPhase(0)
+    initializeReasoning()
+    setTimeout(() => {
+      setIsActive(true)
+      simulateAdvancedReasoning()
+    }, 500)
+  }
+
+  useEffect(() => {
+    if (realTime && analysisId) {
+      initializeReasoning()
+      simulateAdvancedReasoning()
+    }
+  }, [realTime, analysisId])
+
+  useEffect(() => {
+    if (autoScroll && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [reasoningSteps, autoScroll])
+
+  const getRiskColor = (confidence: number) => {
+    if (confidence > 0.8) return 'text-red-500'
+    if (confidence > 0.6) return 'text-orange-500'
+    if (confidence > 0.4) return 'text-yellow-500'
+    return 'text-gray-500'
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'complete': return <CheckCircle className="w-4 h-4 text-green-500" />
-      case 'processing': return <Clock className="w-4 h-4 text-blue-500 animate-spin" />
-      case 'warning': return <AlertTriangle className="w-4 h-4 text-yellow-500" />
+      case 'processing': return <Activity className="w-4 h-4 text-blue-500 animate-pulse" />
       case 'error': return <AlertTriangle className="w-4 h-4 text-red-500" />
-      default: return <Info className="w-4 h-4 text-gray-500" />
+      default: return <div className="w-4 h-4 rounded-full bg-gray-300" />
     }
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <Brain className="w-6 h-6 text-purple-600" />
-          <h2 className="text-xl font-bold text-gray-900">MCP Agent Reasoning</h2>
-        </div>
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-2">
-            <Activity className="w-4 h-4 text-green-500" />
-            <span className="text-sm text-gray-600">Real-time Analysis</span>
+    <Card className={`w-full max-w-md bg-dark-900/95 backdrop-blur-md border-gray-700 text-white ${className}`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-indigo-400" />
+            <CardTitle className="text-lg">MCP Chain of Thought</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="h-6 w-6 p-0"
+            >
+              {isExpanded ? 
+                <ChevronDown className="w-4 h-4" /> : 
+                <ChevronRight className="w-4 h-4" />
+              }
+            </Button>
           </div>
-          <button
-            onClick={() => setIsActive(!isActive)}
-            className={`px-3 py-1 rounded text-sm font-medium ${
-              isActive 
-                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                : 'bg-green-100 text-green-700 hover:bg-green-200'
-            }`}
-          >
-            {isActive ? 'Stop' : 'Start'} Reasoning
-          </button>
-        </div>
-      </div>
-
-      <div 
-        id="reasoning-container"
-        className="max-h-96 overflow-y-auto space-y-4 border rounded-lg p-4 bg-gray-50"
-      >
-        {reasoningSteps.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <Brain className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Click "Start Reasoning" to begin MCP agent analysis</p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleReasoning}
+              className="h-8 w-8 p-0"
+            >
+              {isActive ? 
+                <Pause className="w-4 h-4" /> : 
+                <Play className="w-4 h-4" />
+              }
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRestart}
+              className="h-8 w-8 p-0"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </Button>
           </div>
-        )}
+        </div>
         
-        {reasoningSteps.map((step, index) => (
-          <div 
-            key={step.id}
-            className={`border rounded-lg p-4 bg-white shadow-sm transform transition-all duration-500 ${
-              index === reasoningSteps.length - 1 ? 'ring-2 ring-purple-200 scale-[1.02]' : ''
-            }`}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-full ${
-                  step.category === 'data_fusion' ? 'bg-blue-100' :
-                  step.category === 'analysis' ? 'bg-green-100' :
-                  step.category === 'risk_assessment' ? 'bg-yellow-100' :
-                  step.category === 'decision' ? 'bg-purple-100' : 'bg-gray-100'
-                }`}>
-                  {getCategoryIcon(step.category)}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{step.title}</h3>
-                  <p className="text-sm text-gray-600">{step.description}</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className={`text-xs px-2 py-1 rounded ${
-                  step.confidence > 0.9 ? 'bg-green-100 text-green-800' :
-                  step.confidence > 0.7 ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {Math.round(step.confidence * 100)}% confidence
-                </span>
-                {getStatusIcon(step.status)}
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 rounded p-3 mb-3">
-              <p className="text-sm text-gray-700 leading-relaxed">
-                <strong>Reasoning:</strong> {step.reasoning}
-              </p>
-            </div>
-            
-            {step.data && (
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {Object.entries(step.data).map(([key, value]) => (
-                  <div key={key} className="bg-blue-50 px-2 py-1 rounded">
-                    <span className="font-medium text-blue-800">{key}:</span>
-                    <span className="text-blue-600 ml-1">{String(value)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {step.next_steps && (
-              <div className="mt-3">
-                <p className="text-sm font-medium text-gray-900 mb-2">Next Actions:</p>
-                <ul className="space-y-1">
-                  {step.next_steps.map((action, i) => (
-                    <li key={i} className="flex items-center space-x-2 text-sm text-gray-600">
-                      <CheckCircle className="w-3 h-3 text-green-500" />
-                      <span>{action}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      
-      {reasoningSteps.length > 0 && (
-        <div className="mt-4 p-3 bg-purple-50 rounded-lg">
-          <div className="flex items-center space-x-2 mb-2">
-            <Cpu className="w-4 h-4 text-purple-600" />
-            <span className="font-medium text-purple-900">Current Phase:</span>
-            <span className="text-purple-700 capitalize">{currentPhase.replace('_', ' ')}</span>
-          </div>
-          <div className="w-full bg-purple-200 rounded-full h-2">
-            <div 
-              className="bg-purple-600 h-2 rounded-full transition-all duration-1000"
-              style={{ width: `${(reasoningSteps.length / 6) * 100}%` }}
-            />
-          </div>
+        <div className="flex items-center gap-2 text-sm text-gray-400">
+          <span>Location: {coordinates.latitude.toFixed(4)}°, {coordinates.longitude.toFixed(4)}°</span>
         </div>
-      )}
-    </div>
-  )
-}
+        
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-gray-500">Auto-scroll:</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setAutoScroll(!autoScroll)}
+            className={`h-5 text-xs px-2 ${autoScroll ? 'text-blue-400' : 'text-gray-500'}`}
+          >
+            {autoScroll ? 'ON' : 'OFF'}
+          </Button>
+        </div>
+      </CardHeader>
 
-export default ChainOfThought 
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <CardContent className="pt-0">
+              <div 
+                ref={scrollRef}
+                className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar"
+              >
+                {reasoningSteps.map((step, index) => {
+                  const PhaseIcon = REASONING_PHASES[index]?.icon || Brain
+                  const phaseColor = REASONING_PHASES[index]?.color || 'text-gray-500'
+                  
+                  return (
+                    <motion.div
+                      key={step.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={`border rounded-lg p-3 transition-all duration-300 ${
+                        step.status === 'processing' 
+                          ? 'border-blue-500 bg-blue-500/10' 
+                          : step.status === 'complete'
+                          ? 'border-green-500 bg-green-500/10'
+                          : 'border-gray-600 bg-gray-800/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <PhaseIcon className={`w-4 h-4 ${phaseColor}`} />
+                        <span className="font-medium text-sm">{step.title}</span>
+                        {getStatusIcon(step.status)}
+                        {step.confidence > 0 && (
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ml-auto ${getRiskColor(step.confidence)}`}
+                          >
+                            {(step.confidence * 100).toFixed(0)}%
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {step.sponsorTool && (
+                        <div className="text-xs text-blue-400 mb-2">
+                          🔧 {step.sponsorTool}
+                        </div>
+                      )}
+                      
+                      <div className="space-y-1">
+                        {step.details.map((detail, detailIndex) => (
+                          <motion.div
+                            key={detailIndex}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: detailIndex * 0.2 }}
+                            className="text-xs text-gray-300 leading-relaxed"
+                          >
+                            {detail}
+                          </motion.div>
+                        ))}
+                      </div>
+                      
+                      {step.processing_time && (
+                        <div className="text-xs text-gray-500 mt-2">
+                          ⏱️ {step.processing_time.toFixed(1)}s
+                        </div>
+                      )}
+                    </motion.div>
+                  )
+                })}
+              </div>
+              
+              {reasoningSteps.length > 0 && (
+                <div className="mt-4 p-2 bg-gray-800/50 rounded border border-gray-600">
+                  <div className="flex items-center gap-2 text-xs">
+                    <TrendingUp className="w-4 h-4 text-indigo-400" />
+                    <span className="text-gray-300">
+                      Analysis Progress: {currentPhase + 1}/{REASONING_PHASES.length}
+                    </span>
+                    <div className="ml-auto flex items-center gap-1">
+                      <div className="w-20 bg-gray-700 rounded-full h-1">
+                        <div 
+                          className="bg-indigo-500 h-1 rounded-full transition-all duration-500"
+                          style={{ width: `${((currentPhase + 1) / REASONING_PHASES.length) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Card>
+  )
+} 

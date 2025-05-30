@@ -81,7 +81,7 @@ function Test-Port {
 }
 
 # Check for port conflicts
-$apiPort = 8081  # Changed from 8080 to avoid conflicts
+$apiPort = 8082  # Changed from 8080 to avoid conflicts
 $frontendPort = 3000
 
 if (Test-Port $apiPort) {

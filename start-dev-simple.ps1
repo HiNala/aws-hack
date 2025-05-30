@@ -39,11 +39,11 @@ if (-not (Test-Path ".env")) {
 }
 
 # Start Backend API Server
-Write-Host "Starting PyroGuard Sentinel API on port 8081..." -ForegroundColor Cyan
+Write-Host "Starting PyroGuard Sentinel API on port 8082..." -ForegroundColor Cyan
 $backendProcess = Start-Process powershell -ArgumentList @(
     "-NoExit", 
     "-Command", 
-    "Set-Location '$PWD'; `$env:HOME = `$env:USERPROFILE; `$env:PYTHONPATH = '.'; Write-Host 'PyroGuard Sentinel API Server' -ForegroundColor Green; py -m uvicorn apps.api.main_simple:app --host 0.0.0.0 --port 8081 --reload"
+    "Set-Location '$PWD'; `$env:HOME = `$env:USERPROFILE; `$env:PYTHONPATH = '.'; Write-Host 'PyroGuard Sentinel API Server' -ForegroundColor Green; py -m uvicorn apps.api.main_simple:app --host 0.0.0.0 --port 8082 --reload"
 ) -PassThru
 
 # Wait for backend to start
@@ -57,7 +57,7 @@ $retryCount = 0
 
 while (-not $backendReady -and $retryCount -lt $maxRetries) {
     try {
-        $response = Invoke-RestMethod "http://localhost:8081/" -TimeoutSec 15
+        $response = Invoke-RestMethod "http://localhost:8082/" -TimeoutSec 15
         if ($response.status -eq "operational") {
             Write-Host "API Server is operational! ($($response.name) $($response.mode))" -ForegroundColor Green
             Write-Host "Sponsor Integrations: $($response.sponsor_integrations.Count) configured" -ForegroundColor Cyan
@@ -78,7 +78,7 @@ if (-not $backendReady) {
 if ($backendReady) {
     try {
         Write-Host "Testing sponsor tool integrations..." -ForegroundColor Blue
-        $healthResponse = Invoke-RestMethod "http://localhost:8081/health" -TimeoutSec 10
+        $healthResponse = Invoke-RestMethod "http://localhost:8082/health" -TimeoutSec 10
         
         $integrationStatus = @()
         foreach ($service in $healthResponse.services.PSObject.Properties) {
@@ -98,7 +98,7 @@ if ($backendReady) {
 
 # Create frontend environment file
 Write-Host "Configuring frontend environment..." -ForegroundColor Blue
-Set-Content -Path "apps\web\.env.local" -Value "NEXT_PUBLIC_API_URL=http://localhost:8081"
+Set-Content -Path "apps\web\.env.local" -Value "NEXT_PUBLIC_API_URL=http://localhost:8082"
 
 # Start Frontend
 Write-Host "Starting Next.js Frontend..." -ForegroundColor Cyan
@@ -130,10 +130,10 @@ Write-Host "PyroGuard Sentinel Development Environment" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Gray
 Write-Host ""
 Write-Host "Services:" -ForegroundColor Cyan
-Write-Host "   Backend API:     http://localhost:8081" -ForegroundColor White
-Write-Host "   Health Check:    http://localhost:8081/health" -ForegroundColor White
-Write-Host "   API Docs:        http://localhost:8081/docs" -ForegroundColor White
-Write-Host "   System Status:   http://localhost:8081/api/v1/system-status" -ForegroundColor White
+Write-Host "   Backend API:     http://localhost:8082" -ForegroundColor White
+Write-Host "   Health Check:    http://localhost:8082/health" -ForegroundColor White
+Write-Host "   API Docs:        http://localhost:8082/docs" -ForegroundColor White
+Write-Host "   System Status:   http://localhost:8082/api/v1/system-status" -ForegroundColor White
 Write-Host "   Frontend:        http://localhost:3000" -ForegroundColor White
 Write-Host "   Demo Mode:       http://localhost:3000?demo=1" -ForegroundColor White
 Write-Host ""
