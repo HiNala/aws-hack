@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-dark-950 text-white;
+  }
+  
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-900;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+}
+
+@layer components {
+  /* Leaflet map fixes for dark theme */
+  .leaflet-container {
+    @apply bg-dark-900;
+  }
+  
+  .leaflet-control-zoom a {
+    @apply bg-dark-800 border-gray-600 text-white;
+  }
+  
+  .leaflet-control-zoom a:hover {
+    @apply bg-dark-700;
+  }
+  
+  .leaflet-popup-content-wrapper {
+    @apply bg-dark-800 text-white;
+  }
+  
+  .leaflet-popup-tip {
+    @apply bg-dark-800;
+  }
+  
+  /* Custom risk indicator styles */
+  .risk-marker-low {
+    @apply bg-green-500 border-green-400;
+  }
+  
+  .risk-marker-medium {
+    @apply bg-yellow-500 border-yellow-400;
+  }
+  
+  .risk-marker-high {
+    @apply bg-orange-500 border-orange-400;
+  }
+  
+  .risk-marker-extreme {
+    @apply bg-red-500 border-red-400;
+  }
+  
+  /* Progress animation */
+  .progress-bar {
+    @apply relative overflow-hidden;
+  }
+  
+  .progress-bar::after {
+    content: '';
+    @apply absolute top-0 left-0 h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-30;
+    animation: shimmer 2s infinite;
+    width: 100%;
+  }
+  
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+  
+  .text-shadow-lg {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+  }
+  
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+  
+  .animate-pulse-custom {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+} 

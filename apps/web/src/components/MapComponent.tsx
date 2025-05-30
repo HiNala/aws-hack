@@ -1,0 +1,368 @@
+import React, { useEffect, useState } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
+import L from 'leaflet'
+import { MapPin, Activity, AlertTriangle, TrendingUp } from 'lucide-react'
+
+// Fix for default markers in Leaflet with Next.js
+delete (L.Icon.Default.prototype as any)._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+})
+
+interface AnalysisData {
+  analysis_id: string
+  status: string
+  coordinates: {
+    latitude: number
+    longitude: number
+  }
+  demo_mode: boolean
+  risk_assessment?: {
+    risk_level: number
+    severity: string
+    rationale: string
+  }
+  processing_time_seconds?: number
+}
+
+interface DemoLocation {
+  name: string
+  latitude: number
+  longitude: number
+  description: string
+}
+
+interface MapComponentProps {
+  onLocationClick: (lat: number, lng: number) => void
+  demoMode: boolean
+  isAnalyzing: boolean
+  currentAnalysis: AnalysisData | null
+  demoLocations: DemoLocation[]
+}
+
+// Custom icon for current analysis location
+const analysisIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+  `),
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+  popupAnchor: [0, -30],
+  className: 'analysis-marker'
+})
+
+// Custom icon for demo locations
+const demoIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+  `),
+  iconSize: [20, 20],
+  iconAnchor: [10, 20],
+  popupAnchor: [0, -20],
+  className: 'demo-marker'
+})
+
+function MapEventHandler({ onLocationClick, isAnalyzing }: { onLocationClick: (lat: number, lng: number) => void, isAnalyzing: boolean }) {
+  useMapEvents({
+    click: (e) => {
+      if (!isAnalyzing) {
+        const { lat, lng } = e.latlng
+        onLocationClick(lat, lng)
+      }
+    },
+  })
+  return null
+}
+
+function getRiskColor(severity: string): string {
+  switch (severity) {
+    case 'LOW': return '#10b981' // green-500
+    case 'MEDIUM': return '#f59e0b' // yellow-500  
+    case 'HIGH': return '#f97316' // orange-500
+    case 'EXTREME': return '#ef4444' // red-500
+    default: return '#6b7280' // gray-500
+  }
+}
+
+export default function MapComponent({ 
+  onLocationClick, 
+  demoMode, 
+  isAnalyzing, 
+  currentAnalysis, 
+  demoLocations 
+}: MapComponentProps) {
+  const [mounted, setMounted] = useState(false)
+
+  // Hawaiian Islands bounds
+  const hawaiiBounds: [[number, number], [number, number]] = [
+    [18.5, -161.0], // Southwest corner
+    [22.5, -154.0]  // Northeast corner
+  ]
+
+  const hawaiiCenter: [number, number] = [20.7967, -156.3319] // Maui center
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div className="w-full h-full bg-dark-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading map...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative w-full h-full">
+      <MapContainer
+        center={hawaiiCenter}
+        zoom={8}
+        maxBounds={hawaiiBounds}
+        maxBoundsViscosity={1.0}
+        className="w-full h-full z-0"
+        style={{ 
+          background: '#0f172a',
+          cursor: isAnalyzing ? 'wait' : 'crosshair'
+        }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          opacity={0.8}
+        />
+        
+        <MapEventHandler onLocationClick={onLocationClick} isAnalyzing={isAnalyzing} />
+
+        {/* Demo Location Markers */}
+        {demoMode && demoLocations.map((location, index) => (
+          <Marker 
+            key={`demo-${index}`}
+            position={[location.latitude, location.longitude]} 
+            icon={demoIcon}
+            eventHandlers={{
+              click: () => {
+                if (!isAnalyzing) {
+                  onLocationClick(location.latitude, location.longitude)
+                }
+              }
+            }}
+          >
+            <Popup className="demo-popup">
+              <div className="p-2 min-w-[200px]">
+                <div className="flex items-center space-x-2 mb-2">
+                  <MapPin className="w-4 h-4 text-blue-400" />
+                  <h3 className="font-semibold text-gray-800">{location.name}</h3>
+                </div>
+                <p className="text-sm text-gray-600 mb-3">{location.description}</p>
+                <div className="text-xs text-gray-500 mb-3 font-mono">
+                  {location.latitude.toFixed(4)}°N, {Math.abs(location.longitude).toFixed(4)}°W
+                </div>
+                <button 
+                  onClick={() => onLocationClick(location.latitude, location.longitude)}
+                  disabled={isAnalyzing}
+                  className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
+                    isAnalyzing 
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
+                >
+                  {isAnalyzing ? 'Analysis in Progress...' : 'Analyze Location'}
+                </button>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {/* Current Analysis Marker */}
+        {currentAnalysis && (
+          <Marker 
+            position={[currentAnalysis.coordinates.latitude, currentAnalysis.coordinates.longitude]} 
+            icon={analysisIcon}
+          >
+            <Popup className="analysis-popup">
+              <div className="p-3 min-w-[250px]">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Activity className="w-5 h-5 text-blue-500" />
+                  <h3 className="font-semibold text-gray-800">Wildfire Risk Analysis</h3>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Location */}
+                  <div className="text-sm">
+                    <div className="text-gray-600 mb-1">Location:</div>
+                    <div className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                      {currentAnalysis.coordinates.latitude.toFixed(4)}°N, {Math.abs(currentAnalysis.coordinates.longitude).toFixed(4)}°W
+                    </div>
+                  </div>
+
+                  {/* Analysis Status */}
+                  <div className="text-sm">
+                    <div className="text-gray-600 mb-1">Status:</div>
+                    <div className={`inline-flex items-center space-x-1 px-2 py-1 rounded text-xs font-medium ${
+                      currentAnalysis.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                      currentAnalysis.status === 'completed' ? 'bg-green-100 text-green-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {currentAnalysis.status === 'processing' && (
+                        <div className="animate-spin w-3 h-3 border border-blue-500 border-t-transparent rounded-full"></div>
+                      )}
+                      <span className="capitalize">{currentAnalysis.status}</span>
+                    </div>
+                  </div>
+
+                  {/* Processing Time */}
+                  {currentAnalysis.processing_time_seconds && (
+                    <div className="text-sm">
+                      <div className="text-gray-600 mb-1">Processing Time:</div>
+                      <div className="text-gray-800 font-mono">
+                        {currentAnalysis.processing_time_seconds.toFixed(1)}s
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Risk Assessment */}
+                  {currentAnalysis.risk_assessment && (
+                    <div className="border-t pt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-1">
+                          <AlertTriangle className="w-4 h-4 text-orange-500" />
+                          <span className="text-sm font-semibold text-gray-700">Risk Assessment</span>
+                        </div>
+                        <div 
+                          className="px-2 py-1 rounded text-xs font-bold text-white"
+                          style={{ backgroundColor: getRiskColor(currentAnalysis.risk_assessment.severity) }}
+                        >
+                          {currentAnalysis.risk_assessment.severity}
+                        </div>
+                      </div>
+                      
+                      <div className="mb-2">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-gray-600">Risk Level:</span>
+                          <span className="font-semibold">
+                            {(currentAnalysis.risk_assessment.risk_level * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="h-2 rounded-full transition-all duration-300"
+                            style={{ 
+                              width: `${currentAnalysis.risk_assessment.risk_level * 100}%`,
+                              backgroundColor: getRiskColor(currentAnalysis.risk_assessment.severity)
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-gray-600 leading-relaxed">
+                        {currentAnalysis.risk_assessment.rationale}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Demo Mode Indicator */}
+                  {currentAnalysis.demo_mode && (
+                    <div className="border-t pt-2">
+                      <div className="bg-blue-50 border border-blue-200 rounded px-2 py-1">
+                        <div className="flex items-center space-x-1">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <span className="text-xs text-blue-700 font-medium">Demo Mode</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
+      </MapContainer>
+
+      {/* Map Instructions Overlay */}
+      {!currentAnalysis && !isAnalyzing && (
+        <div className="absolute top-4 left-4 z-[1000] bg-dark-900/90 backdrop-blur-md border border-gray-700 rounded-lg p-4 max-w-xs">
+          <div className="flex items-center space-x-2 mb-2">
+            <MapPin className="w-4 h-4 text-blue-400" />
+            <span className="text-sm font-semibold text-white">Map Instructions</span>
+          </div>
+          <p className="text-xs text-gray-400 leading-relaxed">
+            Click anywhere on the Hawaiian Islands to start real-time wildfire risk analysis. 
+            {demoMode && ' Demo locations are marked with pins for quick testing.'}
+          </p>
+        </div>
+      )}
+
+      {/* Analysis Loading Overlay */}
+      {isAnalyzing && !currentAnalysis && (
+        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm z-[900] flex items-center justify-center">
+          <div className="bg-dark-900/95 border border-gray-700 rounded-lg p-6 text-center">
+            <div className="animate-spin w-6 h-6 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-3"></div>
+            <p className="text-white font-medium">Initializing Analysis...</p>
+            <p className="text-gray-400 text-sm mt-1">Preparing wildfire risk assessment</p>
+          </div>
+        </div>
+      )}
+
+      {/* Map Legend */}
+      <div className="absolute bottom-4 right-4 z-[1000] bg-dark-900/90 backdrop-blur-md border border-gray-700 rounded-lg p-3">
+        <div className="text-xs font-semibold text-white mb-2">Risk Levels</div>
+        <div className="space-y-1">
+          {[
+            { level: 'LOW', color: '#10b981' },
+            { level: 'MEDIUM', color: '#f59e0b' },
+            { level: 'HIGH', color: '#f97316' },
+            { level: 'EXTREME', color: '#ef4444' }
+          ].map(({ level, color }) => (
+            <div key={level} className="flex items-center space-x-2">
+              <div 
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: color }}
+              ></div>
+              <span className="text-xs text-gray-300">{level}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Custom CSS for popups */}
+      <style jsx global>{`
+        .analysis-marker {
+          filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.5));
+        }
+        
+        .demo-marker {
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+        
+        .leaflet-popup-content-wrapper {
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .leaflet-popup-tip {
+          background: white;
+        }
+        
+        .demo-popup .leaflet-popup-content {
+          margin: 0;
+        }
+        
+        .analysis-popup .leaflet-popup-content {
+          margin: 0;
+        }
+      `}</style>
+    </div>
+  )
+} 

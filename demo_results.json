@@ -1,0 +1,110 @@
+{
+  "timestamp": "2025-05-30T12:42:44.660474",
+  "demo_results": {
+    "health": {
+      "status": "healthy",
+      "timestamp": "2025-01-30T12:00:00Z",
+      "services": {
+        "clarifai": "connection_failed",
+        "anthropic": "healthy",
+        "aws_s3": "healthy",
+        "noaa_weather": "healthy",
+        "overpass_api": "healthy",
+        "make_webhook": "healthy"
+      },
+      "environment": {
+        "python_version": "3.11+",
+        "region": "us-west-2",
+        "mode": "production"
+      },
+      "features": {
+        "analysis_pipeline": "operational",
+        "real_time_progress": "operational",
+        "sponsor_integrations": "operational",
+        "hawaii_coverage": "full"
+      },
+      "sponsor_integration_summary": {
+        "satellite_analysis": "Clarifai + Anthropic fallback",
+        "weather_data": "NOAA Weather Service API",
+        "power_infrastructure": "OpenStreetMap Overpass API",
+        "satellite_imagery": "AWS S3 Sentinel-2",
+        "incident_automation": "Make.com webhook \u2192 Jira",
+        "total_integrations": 5,
+        "operational_integrations": 5
+      }
+    },
+    "analysis_demo_mode": {
+      "analysis_id": "70279268-9700-45ed-9b96-9a40580e1632",
+      "total_time": 13.991550207138062,
+      "target_time": 5,
+      "phases_completed": 1,
+      "result_data": {
+        "request": {
+          "latitude": 20.9801,
+          "longitude": -156.6927,
+          "demo_mode": true
+        },
+        "weather": {},
+        "power_lines": {},
+        "satellite": {},
+        "risk_assessment": {},
+        "jira_ticket_url": "https://nalamaui30.atlassian.net/browse/PYRO-458",
+        "processing_time_seconds": 4.674477,
+        "status": "completed",
+        "error_message": null
+      }
+    },
+    "analysis_live_mode": {
+      "analysis_id": "86398e0d-5d2f-4d94-9d96-f4bf4a22ae3a",
+      "total_time": 17.793678522109985,
+      "target_time": 20,
+      "phases_completed": 1,
+      "result_data": {
+        "request": {
+          "latitude": 20.9801,
+          "longitude": -156.6927,
+          "demo_mode": false
+        },
+        "weather": {},
+        "power_lines": {},
+        "satellite": {},
+        "risk_assessment": {},
+        "jira_ticket_url": "https://nalamaui30.atlassian.net/browse/PYRO-768",
+        "processing_time_seconds": 17.341972,
+        "status": "completed",
+        "error_message": null
+      }
+    },
+    "evidence_artifacts": {
+      "API Health Endpoint": "\u2705 Available",
+      "Sponsor Integrations": "\u2705 Available",
+      "Demo Locations": "\u2705 Available",
+      "System Status": "\u2705 Available"
+    }
+  },
+  "timing_benchmarks": {
+    "demo_mode": {
+      "actual_time": 13.991550207138062,
+      "target_time": 5,
+      "meets_target": false
+    },
+    "live_mode": {
+      "actual_time": 17.793678522109985,
+      "target_time": 20,
+      "meets_target": true
+    }
+  },
+  "sponsor_integrations": {
+    "total_integrations": 6,
+    "operational_count": 5,
+    "services": {
+      "clarifai": "connection_failed",
+      "anthropic": "healthy",
+      "aws_s3": "healthy",
+      "noaa_weather": "healthy",
+      "overpass_api": "healthy",
+      "make_webhook": "healthy"
+    }
+  },
+  "overall_status": "PARTIAL_SUCCESS"
+}
