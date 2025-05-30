@@ -115,6 +115,15 @@ export default function ChainOfThought({
     if (type === 'decision') {
       setDecisionCount(prev => prev + 1)
     }
+
+    // Improved auto-scroll with delay for readability
+    if (autoScroll && scrollRef.current) {
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+        }
+      }, 300) // Give time for user to see the new entry
+    }
   }
 
   // Generate realistic zone analysis data
@@ -147,7 +156,7 @@ export default function ChainOfThought({
     // Initial thought
     setTimeout(() => {
       addReasoningEntry('thought', 'Starting PyroGuard analysis in current mode for West Maui region', 'initialization')
-    }, 100)
+    }, 500)
 
     // Grid creation
     setTimeout(() => {
@@ -157,15 +166,15 @@ export default function ChainOfThought({
       const latMax = coordinates.latitude + 0.125
       
       addReasoningEntry('thought', `Creating analysis grid: ${lonMin.toFixed(3)} to ${lonMax.toFixed(3)} lon, ${latMin.toFixed(3)} to ${latMax.toFixed(3)} lat`, 'grid')
-    }, 500)
+    }, 2000)
 
     setTimeout(() => {
       addReasoningEntry('action', 'Created analysis grid with 49 zones', 'grid')
-    }, 1500)
+    }, 4000)
 
     setTimeout(() => {
       addReasoningEntry('observation', 'Filtered to 13 land-based zones (removed 36 water zones)', 'grid')
-    }, 2000)
+    }, 6000)
 
   }, [isAnalyzing, analysisId, coordinates])
 
@@ -176,16 +185,16 @@ export default function ChainOfThought({
 
     addReasoningEntry('thought', 'Accessing Sentinel-2 satellite imagery for vegetation analysis', 'satellite')
 
-    // Simulate zone-by-zone analysis
+    // Simulate zone-by-zone analysis with slower, more readable timing
     const zones = generateZoneAnalysis()
-    let delay = 8000
+    let delay = 10000
 
     zones.forEach((zoneData, index) => {
       setTimeout(() => {
         addReasoningEntry('action', 
           `Analyzed ${zoneData.zone}: ${zoneData.dryness.toFixed(1)}% dryness, NDVI ${zoneData.ndvi.toFixed(2)}`, 
           'satellite', zoneData)
-      }, delay + index * 100)
+      }, delay + index * 800) // Slower timing between zones
     })
 
     setTimeout(() => {
@@ -193,10 +202,14 @@ export default function ChainOfThought({
       addReasoningEntry('observation', 
         `Satellite analysis complete - Average dryness: ${avgDryness.toFixed(1)}%, ${zones.length} zones critically dry`, 
         'satellite')
+    }, delay + zones.length * 800 + 1000)
+    
+    setTimeout(() => {
+      const avgDryness = zones.reduce((sum, z) => sum + z.dryness, 0) / zones.length
       addReasoningEntry('observation', 
         `Satellite analysis complete - 0/${zones.length} zones using real Sentinel-2 data, avg dryness: ${avgDryness.toFixed(1)}%`, 
         'satellite')
-    }, delay + zones.length * 100 + 500)
+    }, delay + zones.length * 800 + 2500)
 
   }, [analysisData?.satellite])
 
@@ -209,17 +222,21 @@ export default function ChainOfThought({
     
     setTimeout(() => {
       addReasoningEntry('action', 'Fetching real-time weather data from NOAA and other sources', 'weather')
-    }, 1000)
+    }, 2000)
 
     setTimeout(() => {
       const windSpeed = analysisData.weather.wind_speed_mph * 1.609 // Convert to km/h
       addReasoningEntry('observation', 
         `Weather analysis complete - Average wind: ${windSpeed.toFixed(1)} km/h, 0 zones under Red Flag conditions`, 
         'weather')
+    }, 8000)
+    
+    setTimeout(() => {
+      const windSpeed = analysisData.weather.wind_speed_mph * 1.609
       addReasoningEntry('observation', 
         `Retrieved real-time weather - ${windSpeed.toFixed(1)} km/h avg winds, 0 zones under Red Flag warning`, 
         'weather')
-    }, 8000)
+    }, 10000)
 
   }, [analysisData?.weather])
 
@@ -233,7 +250,7 @@ export default function ChainOfThought({
     const zones = generateZoneAnalysis()
     const powerZones = zones.filter(z => z.powerLines > 0)
     
-    let delay = 1000
+    let delay = 2000
     powerZones.forEach((zoneData, index) => {
       setTimeout(() => {
         if (zoneData.powerDistance === 0) {
@@ -245,7 +262,7 @@ export default function ChainOfThought({
             `Zone ${zoneData.zone}: Power infrastructure detected - ${zoneData.powerLines} lines, ${zoneData.powerDistance}m distance`, 
             'infrastructure')
         }
-      }, delay + index * 100)
+      }, delay + index * 600) // Slower timing
     })
 
     setTimeout(() => {
@@ -253,8 +270,11 @@ export default function ChainOfThought({
       addReasoningEntry('observation', 
         `Infrastructure analysis complete - ${highRiskZones} high-risk zones, ${powerZones.length} zones with power infrastructure`, 
         'infrastructure')
+    }, delay + powerZones.length * 600 + 1500)
+    
+    setTimeout(() => {
       addReasoningEntry('action', 'Assessed infrastructure risks including power line proximity', 'infrastructure')
-    }, delay + powerZones.length * 100 + 500)
+    }, delay + powerZones.length * 600 + 3000)
 
   }, [analysisData?.power_lines])
 
@@ -267,23 +287,31 @@ export default function ChainOfThought({
     
     setTimeout(() => {
       addReasoningEntry('action', 'Retrieved 13 historical fire records from Senso API', 'historical')
-    }, 3000)
-
-    setTimeout(() => {
-      addReasoningEntry('observation', 'Historical analysis complete - 6 fires recorded in analysis area over 10 years', 'historical')
-      addReasoningEntry('observation', 'Integrated historical fire patterns for context', 'historical')
     }, 4000)
 
     setTimeout(() => {
+      addReasoningEntry('observation', 'Historical analysis complete - 6 fires recorded in analysis area over 10 years', 'historical')
+    }, 6000)
+    
+    setTimeout(() => {
+      addReasoningEntry('observation', 'Integrated historical fire patterns for context', 'historical')
+    }, 8000)
+
+    setTimeout(() => {
       addReasoningEntry('thought', 'Initiating Claude 3 Sonnet risk fusion analysis', 'risk')
-    }, 4500)
+    }, 10000)
 
     setTimeout(() => {
       const riskLevel = analysisData.risk_assessment.severity
       const highRiskZones = riskLevel === 'HIGH' ? 5 : riskLevel === 'MEDIUM' ? 3 : 1
       addReasoningEntry('decision', `Risk fusion complete - ${highRiskZones} high/critical risk zones identified`, 'risk')
+    }, 13000)
+    
+    setTimeout(() => {
+      const riskLevel = analysisData.risk_assessment.severity
+      const highRiskZones = riskLevel === 'HIGH' ? 5 : riskLevel === 'MEDIUM' ? 3 : 1
       addReasoningEntry('decision', `Claude 3 Sonnet completed risk fusion - ${highRiskZones} high-risk zones identified`, 'risk')
-    }, 6000)
+    }, 15000)
 
   }, [analysisData?.risk_assessment])
 
@@ -295,29 +323,40 @@ export default function ChainOfThought({
 
     setTimeout(() => {
       addReasoningEntry('thought', 'Evaluating emergency response requirements', 'response')
-    }, 12000)
+    }, 18000)
 
     setTimeout(() => {
       const actionsTriggered = isHighRisk ? 2 : 0
       addReasoningEntry('action', `Emergency response complete - ${actionsTriggered} actions triggered`, 'response')
+    }, 21000)
+    
+    setTimeout(() => {
+      const actionsTriggered = isHighRisk ? 2 : 0
       addReasoningEntry('action', `Triggered ${actionsTriggered} emergency response actions`, 'response')
-    }, 14000)
+    }, 23000)
 
     setTimeout(() => {
       addReasoningEntry('decision', `Analysis complete - Overall risk: ${analysisData.risk_assessment.severity}`, 'completion')
+    }, 26000)
+    
+    setTimeout(() => {
       addReasoningEntry('decision', 'Generated comprehensive fire analysis report - markdown format', 'completion')
-    }, 15000)
+    }, 28000)
 
   }, [analysisData?.risk_assessment])
 
-  // Auto-scroll logic
+  // Auto-scroll logic with improved timing
   useEffect(() => {
     if (autoScroll && scrollRef.current && reasoningEntries.length > 0) {
+      // Delay scrolling to allow user to see the new entry
       setTimeout(() => {
         if (scrollRef.current) {
-          scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+          scrollRef.current.scrollTo({
+            top: scrollRef.current.scrollHeight,
+            behavior: 'smooth'
+          })
         }
-      }, 100)
+      }, 500) // Longer delay for better UX
     }
   }, [reasoningEntries, autoScroll])
 
