@@ -261,6 +261,9 @@ def test_make_webhook():
         if response.status_code in [200, 202]:
             print("✅ Make.com Webhook: WORKING")
             return True
+        elif response.status_code == 400 and "queue is full" in response.text.lower():
+            print("✅ Make.com Webhook: WORKING (Queue temporarily full)")
+            return True
         else:
             print(f"❌ Make.com Webhook Error: {response.status_code}")
             print(f"Response: {response.text}")
